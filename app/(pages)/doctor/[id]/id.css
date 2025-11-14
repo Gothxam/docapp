@@ -1,0 +1,5 @@
+.details{
+  /* backdrop-filter: blur(130px); */
+  /* avoid !important so Tailwind/background utilities can work and be overridden predictably */
+  background-color: var(--russian-violet-2);
+}
