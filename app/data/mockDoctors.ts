@@ -7,6 +7,7 @@ export interface Doctor {
   availability: string[];
   rating: number;
   reviews:string;
+  about:string;
 }
 
 export const mockDoctors: Doctor[] = [
@@ -18,7 +19,8 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Ananya+Mehta&background=0D8ABC&color=fff",
     availability: ["Mon 9-11 AM", "Wed 2-4 PM", "Fri 10-12 AM"],
     rating: 4.8,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
   },
   {
     id: "2",
@@ -28,7 +30,9 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Rohan+Gupta&background=2E8B57&color=fff",
     availability: ["Tue 10-1 PM", "Thu 3-6 PM"],
     rating: 4.5,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
   },
   {
     id: "3",
@@ -38,7 +42,9 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Kavita+Sharma&background=8B4513&color=fff",
     availability: ["Mon 9-12 AM", "Thu 1-4 PM"],
     rating: 4.9,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
   },
    {
     id: "4",
@@ -48,7 +54,9 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Ananya+Mehta&background=0D8ABC&color=fff",
     availability: ["Mon 9-11 AM", "Wed 2-4 PM", "Fri 10-12 AM"],
     rating: 4.8,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
   },
   {
     id: "5",
@@ -58,7 +66,9 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Rohan+Gupta&background=2E8B57&color=fff",
     availability: ["Tue 10-1 PM", "Thu 3-6 PM"],
     rating: 4.5,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
   },
   {
     id: "6",
@@ -68,7 +78,9 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Kavita+Sharma&background=8B4513&color=fff",
     availability: ["Mon 9-12 AM", "Thu 1-4 PM"],
     rating: 4.9,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
   },
    {
     id: "7",
@@ -78,7 +90,9 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Ananya+Mehta&background=0D8ABC&color=fff",
     availability: ["Mon 9-11 AM", "Wed 2-4 PM", "Fri 10-12 AM"],
     rating: 4.8,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
     
   },
   {
@@ -89,7 +103,9 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Rohan+Gupta&background=2E8B57&color=fff",
     availability: ["Tue 10-1 PM", "Thu 3-6 PM"],
     rating: 4.5,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
   },
   {
     id: "9",
@@ -99,6 +115,8 @@ export const mockDoctors: Doctor[] = [
     image: "https://ui-avatars.com/api/?name=Kavita+Sharma&background=8B4513&color=fff",
     availability: ["Mon 9-12 AM", "Thu 1-4 PM"],
     rating: 4.9,
-    reviews:""
+    reviews:"",
+    about:"sdfghyuhuy sgfyus gfygsey gfugsue ygfuy geygf yugeyufgu efgu egfu suefygeyug fy gesuy fg"
+
   },
 ]

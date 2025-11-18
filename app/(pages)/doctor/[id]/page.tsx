@@ -4,23 +4,82 @@ import Image from "next/image";
 import Link from "next/link";
 import "./id.css"
 import { useParams } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Modal from "@/app/components/Modal/Modal"
 import AppointmentForm from "@/app/components/AppointmentForm/AppointmentForm"
 
 export default function DoctorDetail() {
   const params = useParams()
   const id = params.id as string
-  // console.log('Looking for doctor with ID:',id);
-  // console.log('Available doctors:', mockDoctors);
-  const doctor = mockDoctors.find((d) => d.id === id);
+  const [doctor, setDoctor] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  useEffect(() => {
+    // First check in mock doctors
+    let foundDoctor = mockDoctors.find((d) => d.id === id)
+
+    // If not found, check in registered doctors
+    if (!foundDoctor && id.startsWith('registered-')) {
+      const users = JSON.parse(localStorage.getItem('users') || '[]')
+      const registeredDoctors = users.filter((user: any) => user.userType === 'doctor')
+      const registeredIdx = parseInt(id.split('-')[1])
+      
+      if (registeredDoctors[registeredIdx]) {
+        const user = registeredDoctors[registeredIdx]
+        foundDoctor = {
+          id: id,
+          name: user.name,
+          specialty: user.specialization || 'Specialist',
+          experience: user.experience || 'Not specified',
+          image: `https://ui-avatars.com/api/?name=${user.name}&background=8B5CF6&color=fff`,
+          availability: user.availability || ['Mon 9-11 AM', 'Wed 2-4 PM', 'Fri 10-12 AM'],
+          rating: user.rating || 4.5,
+          reviews: user.reviews || '',
+          about: user.bio || 'Experienced healthcare professional'
+        }
+      }
+    }
+
+    setDoctor(foundDoctor)
+    setLoading(false)
+  }, [id])
+
   const handleBook = (data: any) => {
-      console.log("Appointment submitted:", data)
-      alert(`Appointment booked with ${doctor?.name} on ${data.date}`)
+      // Get current user
+      const userStr = localStorage.getItem('user')
+      if (!userStr) {
+        alert('Please log in first')
+        return
+      }
+
+      const user = JSON.parse(userStr)
+      
+      // Create appointment object
+      const newAppointment = {
+        doctorName: doctor?.name,
+        patientEmail: user.email,
+        reason: data.reason,
+        date: data.date,
+        status: 'Pending'
+      }
+
+      // Save to localStorage
+      const appointments = JSON.parse(localStorage.getItem('appointments') || '[]')
+      appointments.push(newAppointment)
+      localStorage.setItem('appointments', JSON.stringify(appointments))
+      window.dispatchEvent(new Event('appointments-updated'))
+      alert(`Appointment booked with ${doctor?.name} on ${data.date?.toLocaleString()}`)
       setIsModalOpen(false)
     }
 
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="text-xl text-gray-600">Loading...</div>
+      </div>
+    )
+  }
 
   if (!doctor) {
     return (
@@ -66,7 +125,7 @@ export default function DoctorDetail() {
         <div className="mt-8">
           <h3 className="text-xl font-semibold mb-4 text-gray-800">Available Time Slots</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {doctor.availability.map((slot, idx) => (
+            {doctor.availability.map((slot: string, idx: number) => (
               <div 
                 key={idx}
                 className="p-3 bg-gray-50 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"

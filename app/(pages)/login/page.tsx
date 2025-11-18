@@ -23,12 +23,25 @@ export default function LoginPage() {
     localStorage.setItem("user", JSON.stringify(foundUser))
     window.dispatchEvent(new Event("user-updated")) // 🔥 instantly notify navbar
     alert(`Welcome back ${foundUser.name}!`)
-    router.push("/dashboard")
+    
+    // Redirect based on user type
+    if (foundUser.userType === "doctor") {
+      router.push("/doctor-dashboard")
+    } else {
+      router.push("/patient-dashboard")
+    }
   }
 
   useEffect(() => {
     const currentUser = localStorage.getItem("user")
-    if (currentUser) router.push("/dashboard")
+    if (currentUser) {
+      const user = JSON.parse(currentUser)
+      if (user.userType === "doctor") {
+        router.push("/doctor-dashboard")
+      } else {
+        router.push("/patient-dashboard")
+      }
+    }
   }, [router])
 
   return (
