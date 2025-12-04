@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import "@/app/components/DoctorCard/docCard.css"
+import "../../components/DoctorCard/docCard.css"
 export default function DoctorCard({ doctor }: { doctor: any }) {
   return (
     <div className="card rounded-xl p-4 sm:p-5 shadow hover:shadow-lg hover:shadow-purple-500/50 backdrop-blur-md transition">

@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import DoctorCard from "@/app/components/DoctorCard/DoctorCards"
-import { mockDoctors, Doctor } from "@/app/data/mockDoctors"
+
+import DoctorCard from '../../components/DoctorCard/DoctorCards'
+import { mockDoctors } from '../../data/mockDoctors'
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<any[]>([])

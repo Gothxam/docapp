@@ -41,10 +41,10 @@ useEffect(() => {
 
   const isDoctor = user?.userType === "doctor"
   const dashboardLink = isDoctor ? "/doctor-dashboard" : "/patient-dashboard"
-
+ 
   return (
-    <nav className=" shadow-sm sticky top-0 z-40 backdrop-blur-md bg-zinc-600/30">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+    <nav className=" shadow-xl shadow-white/10 sticky top-0 z-40 backdrop-blur-md bg-zinc-600/30 rounded-3xl max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center" >
         <Link href="/" className="font-bold text-xl">MedApp</Link>
         
         {/* Desktop Menu */}
