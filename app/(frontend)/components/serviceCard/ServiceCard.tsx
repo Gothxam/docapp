@@ -1,47 +1,84 @@
-// components/Card.jsx
 'use client'
 
 interface CardProps {
   text: string;
   subtext: string;
   image?: string;
+  description?: string;   // NEW PROP
 }
 
-export default function Card({ text, subtext, image,  }: CardProps) {
+export default function Card({ text, subtext, image, description }: CardProps) {
   return (
-      <div
+    <div
       className="
-        lg:w-3/6
-        lg:hover:w-full
-        h-80                /* Mobile height */
-        sm:h-80           /* Tablet height */
-        lg:h-96           /* Desktop height */
-        rounded-2xl overflow-hidden 
-        group cursor-pointer relative
-        transition-all duration-500
-        
-
+         group
+    bg-white
+    rounded-3xl
+    shadow-xl
+    w-[70rem]
+    max-w-4xl
+    h-80
+    flex flex-row
+    items-center
+    justify-between
+    p-10
+    gap-10
+    transition-all duration-500
+    hover:max-w-6xl
+    cursor-pointer
       "
     >
-      <div className="h-full w-full overflow-hidden shadow-[inset_0px_-50px_20px_0px_black]">
-        <img
-          src={image}
-          alt={text}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 "
-        />
-      </div>
-      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/90 to-transparent"></div>
 
-      <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-4 sm:p-5 md:p-6">
-        <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-semibold drop-shadow-lg">
+      {/* LEFT SIDE CONTENT (does NOT fade) */}
+      <div className="flex flex-col gap-4 w-full md:w-1/4">
+        <h2 className="text-4xl font-semibold text-gray-900 leading-snug">
           {text}
         </h2>
-        {subtext && (
-          <p className="text-gray-200 mt-1 sm:mt-2 text-xs sm:text-sm md:text-base drop-shadow">
-            {subtext}
-          </p>
-        )}
+
+        <p className="text-lg text-gray-600">{subtext}</p>
+
+        <button className="
+          px-6 py-3
+          border border-gray-300
+          rounded-xl
+          text-green-900
+          hover:bg-green-100
+          transition
+        ">
+          Read More
+        </button>
       </div>
+
+      {/* RIGHT SIDE IMAGE */}
+      <div className="relative flex-1 h-full overflow-hidden rounded-2xl">
+  <img
+    src={image}
+    alt={text}
+    className="
+      w-full
+      h-full
+      place-content-end
+      object-cover
+      rounded-2xl
+      transition-transform duration-700
+      group-hover:scale-110
+    "
+  />
+
+        {/* HOVER OVERLAY WITH DESCRIPTION */}
+         <div
+    className="
+      absolute inset-0
+      bg-black/40
+      opacity-0
+      group-hover:opacity-100
+      transition-all duration-500
+      flex flex-col justify-end p-6
+    "
+  >
+    <p className="text-white text-lg leading-relaxed">{description}</p>
+  </div>
+</div>
 
     </div>
   );

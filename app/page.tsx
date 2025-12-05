@@ -8,6 +8,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import AForm from "./(frontend)/components/AForm/AForm";
 import Card from "./(frontend)/components/Card/Card";
+import ServiceCard from "./(frontend)/components/serviceCard/ServiceCard";
 
 export default function TestTailwind() {
   useEffect(() => {
@@ -80,10 +81,15 @@ export default function TestTailwind() {
           
           <div className="our-services  bg-heliotrope w-full h-max mt-52 p-14  ">
 
-            <div className="text-center">marque here </div>
-            <div className=" grid grid-rows-5 place-content-center">
-            <Card text="20+ Years" subtext="Experienced doctors" image="/exp.jpg" />
+            <div className="text-center text-4xl md:text-6xl mb-3 pr-9 pb-14 m-5"> marque here Our Services </div>
+            <div className=" grid grid-rows-5 place-content-center gap-11">
+            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
 
+            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+
+            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+
+            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
             </div>
 
           </div>
