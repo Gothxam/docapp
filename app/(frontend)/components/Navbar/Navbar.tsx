@@ -125,7 +125,7 @@ useEffect(() => {
               <>
                 <Link
                   href="/login"
-                  className="border border-white/30 px-3 py-1 rounded-md hover:bg-white/10 transition block py-2"
+                  className="border border-white/30 px-3 rounded-md hover:bg-white/10 transition block py-2"
                 >
                   Login
                 </Link>

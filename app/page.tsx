@@ -24,7 +24,7 @@ export default function TestTailwind() {
           <img src="/abc.png" alt="banner" className="rounded-lg w-full h-5/6" />
           <div className=" absolute inset-0 
               flex justify-end items-start 
-              px-6 md:px-16 py-10 
+              px-10 md:px-16 py-10 
               text-persian-indigo bg-black/20 ">
               <div className="max-w-md text-right">
                   <h3 className="text-3xl sm:text-4xl md:text-7xl font-bold drop-shadow-2xl" data-aos="fade-right"> Find the Right Doctor for Your Needs</h3>
@@ -47,7 +47,7 @@ export default function TestTailwind() {
 
           {/* Heading Section */}
           <div className="container mx-auto mt-24 ">
-            <h1 className="text-6xl mb-3 pr-9 md:grid md:grid-cols-2 gap-9 m-5">
+            <h1 className="text-4xl md:text-6xl mb-3 pr-9 md:grid md:grid-cols-2 gap-9 m-5">
               Your Health, Our Commitment — Quality Care for Every Stage of Life
             </h1>
           </div>
@@ -61,7 +61,7 @@ export default function TestTailwind() {
             md:grid-cols-2
             lg:grid-cols-4 
             gap-6 
-            px-5 
+            p-5 
             container mx-auto
           ">
             <Card text="95%" subtext="High patient satisfaction" image="/review.jpg" />
@@ -73,11 +73,22 @@ export default function TestTailwind() {
                 loop
                 muted
                 playsInline
-                className="w-full h-64 sm:h-80 md:h-96 object-cover"
+                className="w-full h-64 sm:h-80 md:h-96 object-cover "
               ></video>
             </div>
-              </div>
+          </div>
           
+          <div className="our-services  bg-heliotrope w-full h-max mt-52 p-14  ">
+
+            <div className="text-center">marque here </div>
+            <div className=" grid grid-rows-5 place-content-center">
+            <Card text="20+ Years" subtext="Experienced doctors" image="/exp.jpg" />
+
+            </div>
+
+          </div>
+        
+
         </div>
       </section>
     </>

@@ -19,7 +19,7 @@ export default function AForm() {
     w-full max-w-md md:max-w-lg   
 
     /* Overlay only on large screens */
-    lg:absolute lg:bottom-10 lg:left-10    
+    lg:absolute lg:bottom-16 lg:left-16    
 
     /* Normal flow on mobile + medium screens */
     mt-5 mx-auto

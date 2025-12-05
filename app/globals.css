@@ -49,3 +49,17 @@ html, body {
   transition: all 0.4s ease;
 }
  
+@keyframes marquee {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.marquee {
+  white-space: nowrap;
+  display: inline-block;
+  animation: marquee 20s linear infinite;
+}
