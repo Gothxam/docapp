@@ -98,7 +98,7 @@ useEffect(() => {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden shadow-sm sticky top-0 z-40 backdrop-blur-md bg-zinc-950/30">
+        <div className="md:hidden shadow-sm sticky top-0 z-40 ">
           <div className="px-4 py-3 space-y-2 flex flex-col">
             {!isDoctor && user && (
               <Link href="/doctor" className="text-white hover:text-purple-300 transition block py-2">Doctors</Link>

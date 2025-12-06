@@ -1,14 +1,12 @@
 "use client"
-
 import { homedir } from "os"
-
-
 import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import AForm from "./(frontend)/components/AForm/AForm";
 import Card from "./(frontend)/components/Card/Card";
 import ServiceCard from "./(frontend)/components/serviceCard/ServiceCard";
+import Marque from "./(frontend)/components/TextMarque/Marque";
 
 export default function TestTailwind() {
   useEffect(() => {
@@ -27,33 +25,27 @@ export default function TestTailwind() {
               flex justify-end items-start 
               px-10 md:px-16 py-10 
               text-persian-indigo bg-black/20 ">
-              <div className="max-w-md text-right">
-                  <h3 className="text-3xl sm:text-4xl md:text-7xl font-bold drop-shadow-2xl" data-aos="fade-right"> Find the Right Doctor for Your Needs</h3>
-                  <p
-                    className="mt-4 text-base md:text-lg drop-shadow-xl"
-                    data-aos="fade-right"
-                    data-aos-delay="200"
-                  >
-                    Easy appointments. Trusted healthcare.
-                  </p>
-              </div>
+            <div className="max-w-md text-right">
+              <h3 className="text-3xl sm:text-4xl md:text-7xl font-bold drop-shadow-2xl" data-aos="fade-right"> Find the Right Doctor for Your Needs</h3>
+              <p
+                className="mt-4 text-base md:text-lg drop-shadow-xl"
+                data-aos="fade-right"
+                data-aos-delay="200"
+              >
+                Easy appointments. Trusted healthcare.
+              </p>
+            </div>
           </div>
           <AForm data-aos="fade-up" />
-
         </div>
 
-        
-
         <div className="client-section ">
-
           {/* Heading Section */}
           <div className="container mx-auto mt-24 ">
             <h1 className="text-4xl md:text-6xl mb-3 pr-9 md:grid md:grid-cols-2 gap-9 m-5">
               Your Health, Our Commitment — Quality Care for Every Stage of Life
             </h1>
           </div>
-          
-
           {/* Card Section */}
           <div className="
             grid 
@@ -74,26 +66,37 @@ export default function TestTailwind() {
                 loop
                 muted
                 playsInline
-                className="w-full h-64 sm:h-80 md:h-96 object-cover "
+                className="w-full h-64 sm:h-80 md:h-96 object-cover  "
               ></video>
             </div>
           </div>
-          
-          <div className="our-services  bg-heliotrope w-full h-max mt-52 p-14  ">
-
-            <div className="text-center text-4xl md:text-6xl mb-3 pr-9 pb-14 m-5"> marque here Our Services </div>
-            <div className=" grid grid-rows-5 place-content-center gap-11">
-            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-
-            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-
-            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-
-            <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+          <div className="our-services  bg-heliotrope  w-full h-max mt-52 rounded-lg  ">
+            <section className="py-10 plaster">
+              <Marque baseVelocity={7} >Our Services</Marque>
+              <Marque baseVelocity={-7} >Our Services</Marque>
+            </section>
+            <div className="flex flex-col gap-11 p-6 ">
+            <div className="justify-items-center">
+               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+            </div>
+            <div className="justify-items-center">
+               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+            </div>
+            <div className="justify-items-center">
+               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+            </div>
+            <div className="justify-items-center">
+               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+            </div>
+            <div className="justify-items-center">
+               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+            </div>
+             
+              
             </div>
 
           </div>
-        
+
 
         </div>
       </section>

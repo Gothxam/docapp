@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {Plaster, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./(frontend)/components/Navbar/Navbar";
 
@@ -11,6 +11,11 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+const PlasterFont = Plaster({
+  variable: "--font-Plaster",
+  subsets: ["latin"],
+  weight: "400"
 });
 
 export const metadata: Metadata = {
