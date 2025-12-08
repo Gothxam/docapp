@@ -7,6 +7,9 @@ import AForm from "./(frontend)/components/AForm/AForm";
 import Card from "./(frontend)/components/Card/Card";
 import ServiceCard from "./(frontend)/components/serviceCard/ServiceCard";
 import Marque from "./(frontend)/components/TextMarque/Marque";
+import DoctorCard from "./(frontend)/components/DoctorCard/DoctorCards";
+import { mockDoctors } from "./(frontend)/data/mockDoctors";
+import Footer from "./(frontend)/components/Footer/Footer";
 
 export default function TestTailwind() {
   useEffect(() => {
@@ -70,14 +73,14 @@ export default function TestTailwind() {
               ></video>
             </div>
           </div>
-          <div className="our-services  bg-heliotrope  w-full h-max mt-52 rounded-lg  ">
+          <div className="our-services  bg-persian-indigo  w-full h-max mt-52 rounded-lg  ">
             <section className="py-10 plaster">
               <Marque baseVelocity={7} >Our Services</Marque>
               <Marque baseVelocity={-7} >Our Services</Marque>
             </section>
             <div className="flex flex-col gap-11 p-6 ">
             <div className="justify-items-center">
-               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
+               <ServiceCard text="Emergency & Critical Care: 24/7" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
             </div>
             <div className="justify-items-center">
                <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
@@ -99,6 +102,19 @@ export default function TestTailwind() {
 
 
         </div>
+        <div className="review-section w-full h-72 text-center content-center">
+           review cards here
+
+        </div>
+        <div className="doctors container mx-auto my-12">
+           <h2 className="text-2xl md:text-5xl font-semibold mb-6">Our Experts </h2>
+           <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-2   lg:grid-cols-3 gap-4">
+             {mockDoctors.slice(0,3).map((d) => (
+               <DoctorCard key={d.id} doctor={d} />
+             ))}
+           </div>
+        </div>
+        <Footer/>
       </section>
     </>
   )

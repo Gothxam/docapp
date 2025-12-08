@@ -1,12 +1,12 @@
 'use client'
-import { mockDoctors, Doctor } from "@/app/data/mockDoctors";
 import Image from "next/image";
 import Link from "next/link";
 import "./id.css"
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
-import Modal from "@/app/components/Modal/Modal"
-import AppointmentForm from "@/app/components/AppointmentForm/AppointmentForm"
+import AppointmentForm from "@/app/(frontend)/components/AppointmentForm/AppointmentForm";
+import Modal from "@/app/(frontend)/components/Modal/Modal";
+import { mockDoctors } from "@/app/(frontend)/data/mockDoctors";
 
 export default function DoctorDetail() {
   const params = useParams()

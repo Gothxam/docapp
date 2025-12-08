@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { GiHospitalCross } from 'react-icons/gi'
 
 export default function Navbar() {
 
@@ -45,10 +46,12 @@ useEffect(() => {
   return (
     <nav className=" shadow-xl shadow-white/10 sticky top-0 z-40 backdrop-blur-md bg-zinc-600/30 rounded-3xl max-w-4xl mx-auto px-4">
       <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center" >
-        <Link href="/" className="font-bold text-xl">MedApp</Link>
+        <Link href="/" className="font-bold text-xl flex gap-2 items-center">
+        <GiHospitalCross />
+        MedApp</Link>
         
         {/* Desktop Menu */}
-        <div className="hidden md:flex space-x-4">
+        <div className="hidden md:flex space-x-4 items-center">
           {/* Only show Doctors link to patients */}
           {!isDoctor && user && (
             <Link href="/doctor" className="text-white hover:text-purple-300 transition">Doctors</Link>
