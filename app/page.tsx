@@ -1,121 +1,299 @@
 "use client"
-import { homedir } from "os"
-import { useEffect } from "react";
-import AOS from "aos";
-import "aos/dist/aos.css";
-import AForm from "./(frontend)/components/AForm/AForm";
-import Card from "./(frontend)/components/Card/Card";
-import ServiceCard from "./(frontend)/components/serviceCard/ServiceCard";
-import Marque from "./(frontend)/components/TextMarque/Marque";
-import DoctorCard from "./(frontend)/components/DoctorCard/DoctorCards";
-import { mockDoctors } from "./(frontend)/data/mockDoctors";
-import Footer from "./(frontend)/components/Footer/Footer";
 
-export default function TestTailwind() {
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Heart, Clock, Shield, ArrowRight, Stethoscope, Calendar, Lock } from "lucide-react"
+import AOS from "aos"
+import "aos/dist/aos.css"
+import DoctorCard from "./(frontend)/components/DoctorCard/DoctorCards"
+import { mockDoctors } from "./(frontend)/data/mockDoctors"
+import Footer from "./(frontend)/components/Footer/Footer"
+
+export default function HomePage() {
+  const [user, setUser] = useState<any>(null)
+  const router = useRouter()
+
   useEffect(() => {
-    AOS.init({ duration: 1200, });
-  }, []);
+    AOS.init({ duration: 800, once: false })
+  }, [])
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser)
+      setUser(parsedUser)
+      // If doctor is logged in, redirect to schedule
+      if (parsedUser.userType === "doctor") {
+        router.push("/")
+      }
+    }
+  }, [router])
+
+  const reviews = [
+    { id: 1, name: 'Sarah K.', role: 'Patient', text: 'Quick booking and a compassionate doctor — highly recommend!', rating: 5 },
+    { id: 2, name: 'Michael B.', role: 'Patient', text: 'The care I received was professional and attentive.', rating: 5 },
+    { id: 3, name: 'Priya S.', role: 'Patient', text: 'Easy to use and great follow-up support from the clinic.', rating: 4 },
+  ]
+
   return (
-    <>
-      <section className="m-3 text-centerd    ">
-        <div className=" md:grid md:grid-cols-2 gap-9 m-5 container mx-auto">
-          <p className="text-7xl mb-3 pr-9" data-aos="fade-right">Precision Care for Better Health</p>
-          <p className=" place-content-center md:ps-24" data-aos="fade-left">Good health isn’t just the absence of illness—it’s a balance of body, mind, and lifestyle. Our care philosophy blends medical expertise with a holistic understanding of your everyday life. Whether you’re improving mobility, managing discomfort, or simply seeking better health, we offer safe, effective, and individualized solutions that respect your pace and priorities</p>
-        </div>
-        <div className="container mx-auto relative" data-aos="fade-up">
-          <img src="/abc.png" alt="banner" className="rounded-lg w-full h-5/6" />
-          <div className=" absolute inset-0 
-              flex justify-end items-start 
-              px-10 md:px-16 py-10 
-              text-persian-indigo bg-black/20 ">
-            <div className="max-w-md text-right">
-              <h3 className="text-3xl sm:text-4xl md:text-7xl font-bold drop-shadow-2xl" data-aos="fade-right"> Find the Right Doctor for Your Needs</h3>
-              <p
-                className="mt-4 text-base md:text-lg drop-shadow-xl"
-                data-aos="fade-right"
-                data-aos-delay="200"
-              >
-                Easy appointments. Trusted healthcare.
+    <div className="w-full bg-background text-foreground">
+      {/* ===== HERO SECTION ===== */}
+      <section className="w-full py-16 sm:py-24 md:py-32 px-4 sm:px-6 lg:px-8 purple-gradient-hero">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+            {/* Left Content */}
+            <div className="space-y-6 md:space-y-8" data-aos="fade-right">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full w-fit purple-pill">
+                <Stethoscope className="w-4 h-4 text-amethyst" />
+                <span className="text-sm font-semibold text-amethyst">Healthcare Reimagined</span>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight">
+                Your Health,{" "}
+                <span className="purple-gradient-text">
+                  Our Priority
+                </span>
+              </h1>
+
+              <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
+                Connect with trusted healthcare professionals, book appointments in seconds, and manage your health journey all in one place.
               </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                {!user || user.userType !== "doctor" ? (
+                  <Link
+                    href="/doctor"
+                    className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-all duration-300 shadow-purple hover:shadow-purple-lg"
+                  >
+                    Find a Doctor
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : null}
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 border-2 font-semibold rounded-lg transition-all duration-300 border-amethyst text-amethyst hover-bg-purple"
+                >
+                  Get Started
+                </Link>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-4 pt-8">
+                <div>
+                  <p className="text-2xl sm:text-3xl font-bold text-amethyst">500+</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Doctors</p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-bold text-amethyst">95%</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Satisfaction</p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-bold text-amethyst">24/7</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Support</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Image */}
+            <div className="relative" data-aos="fade-left">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src="/abc.png"
+                  alt="Healthcare"
+                  className="w-full h-96 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+              </div>
+
+              {/* Floating Card */}
+              <div className="mt-6 bg-card border-purple-glow rounded-xl p-4 shadow-purple-lg max-w-xs">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg purple-icon-bg">
+                    <Clock className="w-5 h-5 text-amethyst" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Instant Booking</p>
+                    <p className="text-xs text-muted-foreground">Schedule in seconds</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <AForm data-aos="fade-up" />
         </div>
-
-        <div className="client-section ">
-          {/* Heading Section */}
-          <div className="container mx-auto mt-24 ">
-            <h1 className="text-4xl md:text-6xl mb-3 pr-9 md:grid md:grid-cols-2 gap-9 m-5">
-              Your Health, Our Commitment — Quality Care for Every Stage of Life
-            </h1>
-          </div>
-          {/* Card Section */}
-          <div className="
-            grid 
-            grid-cols-1 
-            sm:grid-cols-2 
-            md:grid-cols-2
-            lg:grid-cols-4 
-            gap-6 
-            p-5 
-            container mx-auto
-          ">
-            <Card text="95%" subtext="High patient satisfaction" image="/review.jpg" />
-            <Card text="20+ Years" subtext="Experienced doctors" image="/exp.jpg" />
-            <div className="lg:col-span-2 md:col-span-2 rounded-xl overflow-hidden shadow-lg ">
-              <video
-                src="/explaine.mp4"  // your video file
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-64 sm:h-80 md:h-96 object-cover  "
-              ></video>
-            </div>
-          </div>
-          <div className="our-services  bg-persian-indigo  w-full h-max mt-52 rounded-lg  ">
-            <section className="py-10 plaster">
-              <Marque baseVelocity={7} >Our Services</Marque>
-              <Marque baseVelocity={-7} >Our Services</Marque>
-            </section>
-            <div className="flex flex-col gap-11 p-6 ">
-            <div className="justify-items-center">
-               <ServiceCard text="Emergency & Critical Care: 24/7" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-            </div>
-            <div className="justify-items-center">
-               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-            </div>
-            <div className="justify-items-center">
-               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-            </div>
-            <div className="justify-items-center">
-               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-            </div>
-            <div className="justify-items-center">
-               <ServiceCard text="Cardio pain" subtext="" description=" gsueg fusgeyug fysuegy gsyefgyg fuysgyue fyuseg yfgse guesufeg syeg yfgseygysegyfesy ysg e ygesy" image="/exp.jpg" />
-            </div>
-             
-              
-            </div>
-
-          </div>
-
-
-        </div>
-        <div className="review-section w-full h-72 text-center content-center">
-           review cards here
-
-        </div>
-        <div className="doctors container mx-auto my-12">
-           <h2 className="text-2xl md:text-5xl font-semibold mb-6">Our Experts </h2>
-           <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-2   lg:grid-cols-3 gap-4">
-             {mockDoctors.slice(0,3).map((d) => (
-               <DoctorCard key={d.id} doctor={d} />
-             ))}
-           </div>
-        </div>
-        <Footer/>
       </section>
-    </>
+
+      {/* ===== FEATURES SECTION ===== */}
+      <section className="w-full py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-background">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16" data-aos="fade-up">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Why Choose MedApp?</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Everything you need for better healthcare management
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: Stethoscope, title: "Find Doctors", desc: "Browse verified healthcare professionals" },
+              { icon: Calendar, title: "Easy Booking", desc: "Schedule appointments in seconds" },
+              { icon: Lock, title: "Secure Records", desc: "Your health data stays private" },
+              { icon: Heart, title: "Quality Care", desc: "Trusted by thousands of patients" },
+            ].map((feature, i) => (
+              <div
+                key={i}
+                className="bg-card border-purple-glow rounded-xl p-6"
+                data-aos="fade-up"
+                data-aos-delay={i * 100}
+              >
+                <div className="p-3 rounded-lg w-fit mb-4 purple-pill">
+                  <feature.icon className="w-6 h-6 text-amethyst" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground text-sm">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== SERVICES SECTION ===== */}
+      <section className="w-full py-16 sm:py-20 px-4 sm:px-6 lg:px-8 purple-gradient-bg">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16" data-aos="fade-up">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Our Services</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Comprehensive healthcare solutions for everyone
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { title: "Emergency Care", desc: "24/7 immediate medical assistance", icon: "🚨" },
+              { title: "Cardiology", desc: "Heart and cardiovascular health services", icon: "❤️" },
+              { title: "Primary Care", desc: "Preventive and ongoing health management", icon: "👨‍⚕️" },
+            ].map((service, i) => (
+              <div
+                key={i}
+                className="bg-card border-purple-glow rounded-xl p-8 shadow-purple"
+                data-aos="fade-up"
+                data-aos-delay={i * 100}
+              >
+                <p className="text-5xl mb-4">{service.icon}</p>
+                <h3 className="font-bold text-xl mb-2">{service.title}</h3>
+                <p className="text-muted-foreground">{service.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== DOCTORS PREVIEW (Only for non-doctors) ===== */}
+      {!user || user.userType !== "doctor" ? (
+        <section className="w-full py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12" data-aos="fade-up">
+              <div>
+                <h2 className="text-3xl sm:text-4xl font-bold mb-2">Meet Our Experts</h2>
+                <p className="text-muted-foreground">Skilled professionals ready to help</p>
+              </div>
+              <Link
+                href="/doctor"
+                className="mt-4 sm:mt-0 inline-flex items-center gap-2 font-semibold hover:gap-3 transition-all text-amethyst"
+              >
+                View All Doctors
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mockDoctors.slice(0, 6).map((doctor: any, i: number) => (
+                <div key={doctor.id} data-aos="fade-up" data-aos-delay={i * 100}>
+                  <DoctorCard doctor={doctor} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ===== REVIEWS / TESTIMONIALS ===== */}
+      <section className="w-full py-16 sm:py-20 px-4 sm:px-6 lg:px-8 purple-gradient-bg">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16" data-aos="fade-up">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">What Patients Say</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Real feedback from people we've helped</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {reviews.map((r, i) => (
+              <div key={r.id} className="bg-card border-purple-glow rounded-xl p-6 shadow-purple" data-aos="fade-up" data-aos-delay={i * 80}>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="font-semibold">{r.name}</p>
+                    <p className="text-xs text-muted-foreground">{r.role}</p>
+                  </div>
+                  <div className="text-amethyst font-bold">{Array.from({ length: r.rating }).map(() => '★').join('')}{Array.from({ length: 5 - r.rating }).map(() => '☆').join('')}</div>
+                </div>
+                <p className="text-muted-foreground">{r.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CTA SECTION ===== */}
+      <section className="w-full py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-background">
+        <div className="max-w-4xl mx-auto" data-aos="fade-up">
+          <div className="purple-gradient-bg border-purple-glow rounded-2xl p-8 sm:p-12 text-center shadow-purple">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
+              Join thousands of patients who trust MedApp for their healthcare needs
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-all"
+              >
+                Create Your Account
+              </Link>
+              {!user || user.userType !== "doctor" ? (
+                <Link
+                  href="/doctor"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 border-2 font-semibold rounded-lg transition-all border-amethyst text-amethyst hover-bg-purple"
+                >
+                  Browse Doctors
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== DEMO CREDENTIALS ===== */}
+      <section className="w-full py-12 px-4 sm:px-6 lg:px-8 bg-background">
+        <div className="max-w-4xl mx-auto">
+          <div className="p-6 sm:p-8 bg-card border-purple-glow rounded-xl shadow-purple" data-aos="fade-up">
+            <p className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-amethyst" />
+              Demo Credentials for Testing
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground mb-1">Patient Account:</p>
+                <p className="font-mono text-foreground">patient@demo.com / password</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1">Doctor Account:</p>
+                <p className="font-mono text-foreground">doctor@demo.com / password</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FOOTER ===== */}
+      <Footer />
+    </div>
   )
 }

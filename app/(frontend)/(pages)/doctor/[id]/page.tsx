@@ -96,68 +96,101 @@ export default function DoctorDetail() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto p-6">
-      <div className="details  p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-        <div>
-          
-        </div>
-        <div className="relative w-32 h-32 mx-auto mb-4">
-          <Image
-            src={doctor.image}
-            alt={doctor.name}
-            fill
-            sizes="128px"
-            priority
-            className="rounded-full object-cover"
-          />
-        </div>
-        <h2 className="text-2xl font-bold text-center mb-2">{doctor.name}</h2>
-        <p className="text-center text-gray-600 text-lg">{doctor.specialty}</p>
-        <p className="text-center text-gray-500 mt-1">
-          Experience: {doctor.experience}
-        </p>
-        
-        <div className="flex items-center justify-center mt-2">
-          <span className="text-yellow-500 text-xl">★</span>
-          <span className="ml-1 text-gray-700">{doctor.rating}</span>
-        </div>
-
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">Available Time Slots</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {doctor.availability.map((slot: string, idx: number) => (
-              <div 
-                key={idx}
-                className="p-3 bg-gray-50 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                {slot}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-          >
-            Book Appointment
-          </button>
-        </div>
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h3 className="text-xl font-semibold mb-4 text-center">
-          Book Appointment with {doctor.name}
-        </h3>
-        <AppointmentForm onSubmit={handleBook} />
-      </Modal>
-        <div className="mt-8 text-center">
+    <main className="min-h-screen bg-gradient-to-b from-background to-background/50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b border-border">
+        <div className="max-w-4xl mx-auto px-4 py-8">
           <Link
             href="/doctor"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors mb-6 font-medium"
           >
-            Back to Doctors List
+            ← Back to Doctors List
           </Link>
         </div>
       </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Doctor Profile Card */}
+        <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-lg mb-8">
+          {/* Top Gradient Section */}
+          <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent"></div>
+
+          {/* Profile Section */}
+          <div className="px-6 sm:px-8 pb-8">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-16 mb-8">
+              {/* Profile Image */}
+              <div className="relative w-40 h-40 mx-auto sm:mx-0">
+                <Image
+                  src={doctor.image}
+                  alt={doctor.name}
+                  fill
+                  sizes="160px"
+                  priority
+                  className="rounded-2xl object-cover border-4 border-card shadow-lg"
+                />
+              </div>
+
+              {/* Profile Info */}
+              <div className="flex-1 text-center sm:text-left">
+                <h2 className="text-3xl sm:text-4xl font-bold mb-2">{doctor.name}</h2>
+                <p className="text-primary text-lg sm:text-xl font-semibold mb-2">{doctor.specialty}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100/50 dark:bg-yellow-500/20 rounded-full">
+                    <span className="text-yellow-500 text-xl">★</span>
+                    <span className="font-semibold">{doctor.rating}</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100/50 dark:bg-green-500/20 rounded-full text-sm">
+                    <span>📚</span>
+                    <span className="font-semibold">{doctor.experience}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* About Section */}
+            {doctor.about && (
+              <div className="mb-8 pt-8 border-t border-border">
+                <h3 className="text-xl font-bold mb-4">About</h3>
+                <p className="text-muted-foreground leading-relaxed">{doctor.about}</p>
+              </div>
+            )}
+
+            {/* Available Time Slots */}
+            <div className="mb-8 pt-8 border-t border-border">
+              <h3 className="text-xl font-bold mb-6">Available Time Slots</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {doctor.availability.map((slot: string, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-4 bg-secondary/50 hover:bg-secondary border border-border rounded-lg text-foreground font-medium transition-colors cursor-pointer"
+                  >
+                    {slot}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Book Appointment Button */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex-1 px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-colors duration-300"
+              >
+                Book Appointment
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Appointment Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <div className="space-y-4">
+          <h3 className="text-2xl font-bold text-center">Book Appointment</h3>
+          <p className="text-center text-muted-foreground">Schedule your visit with {doctor.name}</p>
+          <AppointmentForm onSubmit={handleBook} />
+        </div>
+      </Modal>
     </main>
   );
 }

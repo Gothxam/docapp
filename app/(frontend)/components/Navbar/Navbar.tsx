@@ -2,14 +2,14 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { GiHospitalCross } from 'react-icons/gi'
 import { Button } from "@/components/ui/button"
 import * as React from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useSidebar } from "@/components/ui/sidebar"
 
-// import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,126 +44,148 @@ export function ModeToggle() {
   )
 }
 
-
 export default function Navbar() {
-
-    const [user, setUser] = useState<any>(null)
-    const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
+  const { open, openMobile } = useSidebar()
 
-useEffect(() => {
-  const updateUser = () => {
-    const storedUser = localStorage.getItem("user")
-    setUser(storedUser ? JSON.parse(storedUser) : null)
+  // Don't render navbar when sidebar is open (except on home page)
+  const isHomePage = pathname === "/" || pathname === ""
+  const shouldHideNavbar = !isHomePage && (open || openMobile)
+
+  if (shouldHideNavbar) {
+    return null
   }
 
-  // Run immediately when Navbar mounts
-  updateUser()
+  useEffect(() => {
+    const updateUser = () => {
+      const storedUser = localStorage.getItem("user")
+      setUser(storedUser ? JSON.parse(storedUser) : null)
+    }
 
-  // Listen for storage updates (works across tabs)
-  window.addEventListener("storage", updateUser)
+    updateUser()
+    window.addEventListener("storage", updateUser)
+    window.addEventListener("user-updated", updateUser)
 
-  // Listen for custom event (triggered manually from login/logout)
-  window.addEventListener("user-updated", updateUser)
-
-  // Cleanup
-  return () => {
-    window.removeEventListener("storage", updateUser)
-    window.removeEventListener("user-updated", updateUser)
-  }
-}, [])
+    return () => {
+      window.removeEventListener("storage", updateUser)
+      window.removeEventListener("user-updated", updateUser)
+    }
+  }, [])
 
   const handleLogout = () => {
-  localStorage.removeItem("user")
-  setUser(null)
-  window.dispatchEvent(new Event("user-updated")) // 🔥 notify navbar instantly
-  router.push("/login")
-}
+    localStorage.removeItem("user")
+    setUser(null)
+    window.dispatchEvent(new Event("user-updated"))
+    router.push("/login")
+  }
 
   const isDoctor = user?.userType === "doctor"
   const dashboardLink = isDoctor ? "/doctor-dashboard" : "/patient-dashboard"
- 
+
   return (
-    <nav className=" shadow-xl shadow-white/10 sticky top-0 z-40 backdrop-blur-md bg-zinc-600/30 rounded-3xl max-w-4xl mx-auto px-4">
-      <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center" >
-        <Link href="/" className="font-bold text-xl flex gap-2 items-center">
-        <GiHospitalCross />
-        MedApp</Link>
-        
+    <nav className="sticky top-0 z-40 border-b border-primary/20 bg-gradient-to-r from-background via-background to-primary/5 backdrop-blur-md">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <Link href="/" className="font-bold text-xl flex gap-2 items-center hover:opacity-80 transition">
+          <GiHospitalCross className="text-primary" />
+          <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">MedApp</span>
+        </Link>
+
         {/* Desktop Menu */}
-        <div className="hidden md:flex space-x-4 items-center">
-          {/* Only show Doctors link to patients */}
+        <div className="hidden md:flex space-x-1 items-center">
           {!isDoctor && user && (
-            <Link href="/doctor" className="text-white hover:text-purple-300 transition">Doctors</Link>
-          )}
-          
-          {/* Show Dashboard link to all logged-in users */}
-          {user && (
-            <Link href={dashboardLink} className="text-white hover:text-purple-300 transition">
-              {isDoctor ? "My Appointments" : "Dashboard"}
+            <Link href="/doctor" className="px-3 py-2 text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition">
+              Doctors
             </Link>
           )}
-          
-          {/* Show Profile link to all logged-in users */}
-          {user && (
-            <Link href={isDoctor ? "/profile/doctor" : "/profile/patient"} className="text-white hover:text-purple-300 transition">Profile</Link>
+
+          {user && isDoctor && (
+            <Link href="/doctor-schedule" className="px-3 py-2 text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition">
+              Schedule
+            </Link>
           )}
+
+          {user && (
+            <Link href={dashboardLink} className="px-3 py-2 text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition">
+              {isDoctor ? "Manage" : "Dashboard"}
+            </Link>
+          )}
+
+          {user && (
+            <Link href={isDoctor ? "/profile/doctor" : "/profile/patient"} className="px-3 py-2 text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition">
+              Profile
+            </Link>
+          )}
+
           {user ? (
             <>
-              <span className="text-sm opacity-80 text-white">Hi, {user.name.split(" ")[0]} {isDoctor && "🩺"}</span>
+              <span className="text-sm text-muted-foreground px-3">Hi, {user.name.split(" ")[0]} {isDoctor && "🩺"}</span>
               <button
                 onClick={handleLogout}
-                className="border border-white/30 px-3 py-1 rounded-md text-white hover:bg-white/10 transition"
+                className="px-3 py-2 text-foreground border border-primary/30 rounded-lg hover:bg-primary/10 hover:border-primary/60 transition"
               >
                 Logout
               </button>
             </>
-            ) : (
+          ) : (
             <Link
               href="/login"
-              className="border border-white/30 px-3 py-1 rounded-md hover:bg-white/10 transition"
+              className="px-3 py-2 text-foreground border border-primary/30 rounded-lg hover:bg-primary/10 hover:border-primary/60 transition"
             >
               Login
             </Link>
           )}
-         <ModeToggle/> 
+          <div className="pl-2 border-l border-primary/20">
+            <ModeToggle />
+          </div>
         </div>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden flex flex-col gap-1"
+          className="md:hidden flex flex-col gap-1.5"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
-          <div className="w-6 h-0.5 bg-white"></div>
-          <div className="w-6 h-0.5 bg-white"></div>
-          <div className="w-6 h-0.5 bg-white"></div>
+          <div className="w-6 h-0.5 bg-foreground transition-all"></div>
+          <div className="w-6 h-0.5 bg-foreground transition-all"></div>
+          <div className="w-6 h-0.5 bg-foreground transition-all"></div>
         </button>
       </div>
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden shadow-sm sticky top-0 z-40 ">
+        <div className="md:hidden border-t border-primary/20 bg-gradient-to-b from-background to-primary/5">
           <div className="px-4 py-3 space-y-2 flex flex-col">
             {!isDoctor && user && (
-              <Link href="/doctor" className="text-white hover:text-purple-300 transition block py-2">Doctors</Link>
+              <Link href="/doctor" className="text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition block py-2 px-3">
+                Doctors
+              </Link>
             )}
-            {user && (
-              <Link href={dashboardLink} className="text-white hover:text-purple-300 transition block py-2">
-                {isDoctor ? "My Appointments" : "Dashboard"}
+            {user && isDoctor && (
+              <Link href="/doctor-schedule" className="text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition block py-2 px-3">
+                Schedule
               </Link>
             )}
             {user && (
-              <Link href={isDoctor ? "/profile/doctor" : "/profile/patient"} className="text-white hover:text-purple-300 transition block py-2">Profile</Link>
+              <Link href={dashboardLink} className="text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition block py-2 px-3">
+                {isDoctor ? "Manage" : "Dashboard"}
+              </Link>
+            )}
+            {user && (
+              <Link href={isDoctor ? "/profile/doctor" : "/profile/patient"} className="text-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition block py-2 px-3">
+                Profile
+              </Link>
             )}
             {user ? (
               <>
-                <span className="text-sm opacity-80 block py-2">Hi, {user.name.split(" ")[0]}</span>
-            <div className='flex'>
-              <ModeToggle/>
-            </div>
+                <span className="text-sm text-muted-foreground block py-2 px-3">Hi, {user.name.split(" ")[0]}</span>
+                <div className='flex px-3 py-2'>
+                  <ModeToggle />
+                </div>
                 <button
                   onClick={handleLogout}
-                  className="border border-white/30 px-3 py-1 rounded-md hover:bg-white/10 transition w-full text-left"
+                  className="text-foreground border border-primary/30 px-3 py-2 rounded-lg hover:bg-primary/10 hover:border-primary/60 transition w-full text-left"
                 >
                   Logout
                 </button>
@@ -172,13 +194,12 @@ useEffect(() => {
               <>
                 <Link
                   href="/login"
-                  className="border border-white/30 px-3 rounded-md hover:bg-white/10 transition block py-2"
+                  className="text-foreground border border-primary/30 px-3 py-2 rounded-lg hover:bg-primary/10 hover:border-primary/60 transition block"
                 >
                   Login
                 </Link>
               </>
             )}
-          
           </div>
         </div>
       )}

@@ -24,6 +24,52 @@
   --mauve: #e0aaffff;
 }
 
+.purple-gradient-hero {
+  /* Section background subtle purple gradient */
+  background: linear-gradient(135deg, rgba(159,77,221,0.06) 0%, rgba(123,44,191,0.04) 50%, rgba(90,24,154,0.06) 100%);
+}
+
+/* Text gradient utility — use for headings */
+.purple-gradient-text {
+  display: inline-block;
+  background: linear-gradient(90deg, var(--amethyst), var(--french-violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.shadow-purple {
+  box-shadow: 0 10px 30px rgba(157, 78, 221, 0.15);
+}
+
+.shadow-purple-lg {
+  box-shadow: 0 20px 40px rgba(157, 78, 221, 0.2);
+}
+
+.border-purple-glow {
+  border: 1px solid rgba(157, 78, 221, 0.3);
+  transition: all 0.3s ease;
+}
+
+.border-purple-glow:hover {
+  border-color: rgba(157, 78, 221, 0.6);
+  box-shadow: 0 0 20px rgba(157, 78, 221, 0.2);
+}
+
+/* background utility for purple gradient sections */
+.purple-gradient-bg {
+  background: linear-gradient(135deg, rgba(157,78,221,0.06) 0%, rgba(123,44,191,0.04) 50%, rgba(90,24,154,0.06) 100%);
+}
+
+/* utility classes using theme variables */
+.text-amethyst { color: var(--amethyst); }
+.border-amethyst { border-color: var(--amethyst); color: var(--amethyst); }
+.purple-pill { background-color: rgba(159, 77, 221, 0.1); color: var(--amethyst); }
+.purple-icon-bg { background-color: rgba(159, 77, 221, 0.15); }
+.hover-bg-purple { transition: background-color 0.2s ease; }
+.hover-bg-purple:hover { background-color: rgba(159, 77, 221, 0.1); }
+
 :root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -82,6 +128,14 @@ html, body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -108,6 +162,14 @@ html, body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -120,4 +182,32 @@ html, body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Page fade transition for smooth page load / route changes */
+.page-fade {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 320ms cubic-bezier(.2,.8,.2,1), transform 320ms cubic-bezier(.2,.8,.2,1);
+}
+.page-fade.ready {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade,
+  .page-fade.ready {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* small spinner keyframes for fallback use */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }

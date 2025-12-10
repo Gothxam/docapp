@@ -3,6 +3,9 @@ import {Plaster, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./(frontend)/components/Navbar/Navbar";
 import { ThemeProvider } from "./(frontend)/components/Theme/theme-provider";
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { AppSidebar } from "./(frontend)/components/App-sidebar/app-sidebar";
+import LayoutWrapper from "./(frontend)/components/LayoutWrapper/LayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,8 +43,11 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-        <Navbar/>
-        {children}
+        <SidebarProvider>
+          <LayoutWrapper navbar={<Navbar/>} sidebar={<AppSidebar />}>
+            {children}
+          </LayoutWrapper>
+        </SidebarProvider>
            </ThemeProvider>
       </body>
     </html>
@@ -50,24 +56,17 @@ export default function RootLayout({
 
 
 
-// import { ThemeProvider } from "@/components/theme-provider"
+// import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+// import { AppSidebar } from "@/components/app-sidebar"
 
-// export default function RootLayout({ children }: RootLayoutProps) {
+// export default function Layout({ children }: { children: React.ReactNode }) {
 //   return (
-//     <>
-//       <html lang="en" suppressHydrationWarning>
-//         <head />
-//         <body>
-//           <ThemeProvider
-//             attribute="class"
-//             defaultTheme="system"
-//             enableSystem
-//             disableTransitionOnChange
-//           >
-//             {children}
-//           </ThemeProvider>
-//         </body>
-//       </html>
-//     </>
+//     <SidebarProvider>
+//       <AppSidebar />
+//       <main>
+//         <SidebarTrigger />
+//         {children}
+//       </main>
+//     </SidebarProvider>
 //   )
 // }

@@ -34,10 +34,12 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify(foundUser))
       window.dispatchEvent(new Event("user-updated"))
 
+      // Simulate network delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500))
 
+      // Redirect based on user type
       if (foundUser.userType === "doctor") {
-        router.push("/doctor-schedule")
+        router.push("/doctor-dashboard")
       } else {
         router.push("/patient-dashboard")
       }
@@ -53,7 +55,7 @@ export default function LoginPage() {
     if (currentUser) {
       const user = JSON.parse(currentUser)
       if (user.userType === "doctor") {
-        router.push("/doctor-schedule")
+        router.push("/doctor-dashboard")
       } else {
         router.push("/patient-dashboard")
       }
@@ -63,6 +65,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <div className="w-full max-w-md">
+        {/* Logo Section */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <GiHospitalCross className="w-8 h-8 text-primary" />
@@ -71,7 +74,9 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Welcome back to your healthcare platform</p>
         </div>
 
+        {/* Card */}
         <div className="bg-card border border-border rounded-2xl shadow-lg p-8">
+          {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -82,7 +87,8 @@ export default function LoginPage() {
             </div>
           )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Email Field */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">Email Address</label>
               <div className="relative">
@@ -109,6 +115,7 @@ export default function LoginPage() {
               )}
             </div>
 
+            {/* Password Field */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">Password</label>
               <div className="relative">
@@ -146,6 +153,7 @@ export default function LoginPage() {
               )}
             </div>
 
+            {/* Remember & Forgot */}
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -159,6 +167,7 @@ export default function LoginPage() {
               </a>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -169,6 +178,7 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Divider */}
           <div className="my-6 relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border"></div>
@@ -178,12 +188,14 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Register Link */}
           <p className="text-center text-sm mb-6">
             <Link href="/register" className="text-primary hover:underline font-semibold">
               Create a new account
             </Link>
           </p>
 
+          {/* Demo Info */}
           <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg text-xs text-muted-foreground">
             <p className="font-semibold text-foreground mb-2">Demo Credentials:</p>
             <p>👤 Patient: patient@demo.com / password</p>
@@ -191,6 +203,7 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Footer */}
         <div className="text-center mt-8 text-xs text-muted-foreground">
           <p>By signing in, you agree to our Terms of Service and Privacy Policy</p>
         </div>
