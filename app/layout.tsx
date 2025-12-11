@@ -6,6 +6,7 @@ import { ThemeProvider } from "./(frontend)/components/Theme/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "./(frontend)/components/App-sidebar/app-sidebar";
 import LayoutWrapper from "./(frontend)/components/LayoutWrapper/LayoutWrapper";
+import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
         <SidebarProvider>
           <LayoutWrapper navbar={<Navbar/>} sidebar={<AppSidebar />}>
             {children}
+            <Analytics/>
           </LayoutWrapper>
         </SidebarProvider>
            </ThemeProvider>
