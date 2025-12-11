@@ -8,7 +8,7 @@ import { Mail, Lock, User, UserPlus, AlertCircle, Eye, EyeOff, Users, ChevronDow
 import { GiHospitalCross } from "react-icons/gi"
 
 export default function RegisterPage() {
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -177,8 +177,8 @@ export default function RegisterPage() {
                   }`}
                 >
                   <span className={selectedRole ? 'text-foreground' : 'text-muted-foreground'}>
-                    {selectedRole === 'patient' ? '👤 Patient' :
-                     selectedRole === 'doctor' ? '👨‍⚕️ Doctor' :
+                    {selectedRole === 'patient' ? 'patient' :
+                     selectedRole === 'doctor' ? 'doctor' :
                      'Select account type'}
                   </span>
                 </button>
@@ -190,6 +190,7 @@ export default function RegisterPage() {
                       type="button"
                       onClick={() => {
                         setSelectedRole('patient')
+                        setValue('userType', 'patient')
                         setIsDropdownOpen(false)
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors first:rounded-t-lg"
@@ -200,6 +201,7 @@ export default function RegisterPage() {
                       type="button"
                       onClick={() => {
                         setSelectedRole('doctor')
+                        setValue('userType', 'doctor')
                         setIsDropdownOpen(false)
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors last:rounded-b-lg"
@@ -253,3 +255,4 @@ export default function RegisterPage() {
     </main>
   )
 }
+
