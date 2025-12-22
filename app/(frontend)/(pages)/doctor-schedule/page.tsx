@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Calendar, Clock, User, Phone, AlertCircle, ArrowRight } from "lucide-react"
 
 export default function DoctorSchedule() {
-  const [user, setUser] = useState<any>(null)
+  const [user,setUser]=useState<any>(null)
   const [appointments, setAppointments] = useState<any[]>([])
   const [filteredAppointments, setFilteredAppointments] = useState<any[]>([])
   const [selectedFilter, setSelectedFilter] = useState("all")

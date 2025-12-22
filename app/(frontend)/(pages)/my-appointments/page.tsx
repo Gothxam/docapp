@@ -19,7 +19,6 @@ export default function MyAppointmentsPage() {
 
     const parsedUser = JSON.parse(storedUser)
     setUser(parsedUser)
-
     // Get appointments for this patient
     const storedAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
     const patientAppointments = storedAppointments.filter((appt: any) => appt.patientEmail === parsedUser.email)

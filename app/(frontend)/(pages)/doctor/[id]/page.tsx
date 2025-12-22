@@ -1,196 +1,294 @@
 'use client'
-import Image from "next/image";
-import Link from "next/link";
-import "./id.css"
-import { useParams } from "next/navigation"
-import { useState, useEffect } from "react"
-import AppointmentForm from "@/app/(frontend)/components/AppointmentForm/AppointmentForm";
-import Modal from "@/app/(frontend)/components/Modal/Modal";
-import { mockDoctors } from "@/app/(frontend)/data/mockDoctors";
+
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import { Edit2, Save, X, Mail, MapPin, Phone, Award, Clock, Star, Users, CheckCircle, Upload } from 'lucide-react'
+
+
+import Modal from '@/app/(frontend)/components/Modal/Modal'
+import AppointmentForm from '@/app/(frontend)/components/AppointmentForm/AppointmentForm'
+import { mockDoctors } from '@/app/(frontend)/data/mockDoctors'
+
+type Review = {
+  id: string
+  patientName: string
+  email: string
+  rating: number
+  comment: string
+  date: string
+}
 
 export default function DoctorDetail() {
-  const params = useParams()
-  const id = params.id as string
+  const { id } = useParams()
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
+
   const [doctor, setDoctor] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+
   useEffect(() => {
-    // First check in mock doctors
-    let foundDoctor = mockDoctors.find((d) => d.id === id)
+    const found = mockDoctors.find(d => d.id === id)
+    setDoctor(found)
 
-    // If not found, check in registered doctors
-    if (!foundDoctor && id.startsWith('registered-')) {
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const registeredDoctors = users.filter((user: any) => user.userType === 'doctor')
-      const registeredIdx = parseInt(id.split('-')[1])
-      
-      if (registeredDoctors[registeredIdx]) {
-        const user = registeredDoctors[registeredIdx]
-        foundDoctor = {
-          id: id,
-          name: user.name,
-          specialty: user.specialization || 'Specialist',
-          experience: user.experience || 'Not specified',
-          image: `https://ui-avatars.com/api/?name=${user.name}&background=8B5CF6&color=fff`,
-          availability: user.availability || ['Mon 9-11 AM', 'Wed 2-4 PM', 'Fri 10-12 AM'],
-          rating: user.rating || 4.5,
-          reviews: user.reviews || '',
-          about: user.bio || 'Experienced healthcare professional'
-        }
-      }
-    }
-
-    setDoctor(foundDoctor)
-    setLoading(false)
+    const stored = JSON.parse(
+      localStorage.getItem(`reviews-${id}`) || '[]'
+    )
+    setReviews(stored)
   }, [id])
 
-  const handleBook = (data: any) => {
-      // Get current user
-      const userStr = localStorage.getItem('user')
-      if (!userStr) {
-        alert('Please log in first')
-        return
-      }
-
-      const user = JSON.parse(userStr)
-      
-      // Create appointment object
-      const newAppointment = {
-        doctorName: doctor?.name,
-        patientEmail: user.email,
-        reason: data.reason,
-        date: data.date,
-        status: 'Pending'
-      }
-
-      // Save to localStorage
-      const appointments = JSON.parse(localStorage.getItem('appointments') || '[]')
-      appointments.push(newAppointment)
-      localStorage.setItem('appointments', JSON.stringify(appointments))
-      window.dispatchEvent(new Event('appointments-updated'))
-      alert(`Appointment booked with ${doctor?.name} on ${data.date?.toLocaleString()}`)
-      setIsModalOpen(false)
+  const submitReview = () => {
+    if (!rating || !comment.trim()) {
+      alert('Please give rating and comment')
+      return
     }
 
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
-      </div>
-    )
-  }
+    const newReview: Review = {
+      id: crypto.randomUUID(),
+      patientName: user?.name || 'Anonymous',
+      email: user?.email || '',
+      rating,
+      comment,
+      date: new Date().toISOString()
+    }
 
-  if (!doctor) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <div className="text-xl text-gray-600 mb-4">Doctor not found</div>
-        <Link 
-          href="/doctor" 
-          className="text-blue-600 hover:text-blue-800 underline"
-        >
-          Back to Doctors List
-        </Link>
-      </div>
-    );
+    const updated = [newReview, ...reviews]
+    setReviews(updated)
+    localStorage.setItem(`reviews-${id}`, JSON.stringify(updated))
+
+    setRating(0)
+    setComment('')
   }
+  const stats = [
+    { icon: Users, label: 'Total Patients', value: '450+', color: 'text-blue-500' },
+    { icon: CheckCircle, label: 'Consultations', value: '1,200+', color: 'text-green-500' },
+    { icon: Star, label: 'Rating', value: user.rating || '4.8', color: 'text-yellow-500' },
+    { icon: Clock, label: 'Experience', value: user.experience || '10 years', color: 'text-purple-500' },
+  ]
+
+  if (!doctor) return <p className="py-20 text-center">Doctor not found</p>
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-background/50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <Link
-            href="/doctor"
-            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors mb-6 font-medium"
-          >
-            ← Back to Doctors List
-          </Link>
+    <main className="min-h-screen bg-background">
+
+      <Link href="/doctor" className="text-purple-600 font-medium">
+        ← Back to doctors
+      </Link>
+
+      {/* ================= PROFILE ================= */}
+
+      <div className="h-32 bg-gradient-to-r from-amethyst/20 via-french-violet/20 to-tekhelet/20 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-gradient-to-r from-amethyst to-french-violet blur-3xl"></div>
         </div>
       </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <section className="-mt-16 mb-8 relative z-10">
+            <div className="bg-card border-purple-glow rounded-2xl p-6 md:p-8 shadow-purple-lg">
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Doctor Profile Card */}
-        <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-lg mb-8">
-          {/* Top Gradient Section */}
-          <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent"></div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8 items-start">
 
-          {/* Profile Section */}
-          <div className="px-6 sm:px-8 pb-8">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-16 mb-8">
-              {/* Profile Image */}
-              <div className="relative w-40 h-40 mx-auto sm:mx-0">
-                <Image
-                  src={doctor.image}
-                  alt={doctor.name}
-                  fill
-                  sizes="160px"
-                  priority
-                  className="rounded-2xl object-cover border-4 border-card shadow-lg"
-                />
-              </div>
-
-              {/* Profile Info */}
-              <div className="flex-1 text-center sm:text-left">
-                <h2 className="text-3xl sm:text-4xl font-bold mb-2">{doctor.name}</h2>
-                <p className="text-primary text-lg sm:text-xl font-semibold mb-2">{doctor.specialty}</p>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100/50 dark:bg-yellow-500/20 rounded-full">
-                    <span className="text-yellow-500 text-xl">★</span>
-                    <span className="font-semibold">{doctor.rating}</span>
+                <div className="md:col-span-1 flex flex-col items-center">
+                  <div className="relative mb-4 group">
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amethyst to-french-violet p-1 shadow-purple">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-card">
+                        <Image
+                          src={doctor.image}
+                          alt={doctor.name}
+                          width={128}
+                          height={128}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 right-0 bg-green-500 w-5 h-5 rounded-full border-4 border-card"></div>
                   </div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100/50 dark:bg-green-500/20 rounded-full text-sm">
-                    <span>📚</span>
-                    <span className="font-semibold">{doctor.experience}</span>
-                  </div>
+                  <h1 className="text-2xl font-bold text-foreground text-center">Dr. {doctor.name}</h1>
+                  <p className="text-amethyst font-semibold text-sm mt-1">{doctor.specialization || 'General Practitioner'}</p>
+                </div>
+
+                {/* Main Info */}
+              <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Contact Info */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Contact Information</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-4 h-4 text-amethyst flex-shrink-0" />
+                        <p className="text-sm text-foreground break-all">{user.email}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-4 h-4 text-amethyst flex-shrink-0" />
+                        <p className="text-sm text-foreground">{user.phone || '+1 (555) 000-0000'}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-4 h-4 text-amethyst flex-shrink-0" />
+                        <p className="text-sm text-foreground">{user.location || 'New York, USA'}</p>
+                      </div>
+                    </div>
+                </div>
+
+                {/* Professional Details */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Professional Details</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <Award className="w-4 h-4 text-amethyst flex-shrink-0" />
+                        <p className="text-sm text-foreground">{doctor.licenseNumber || 'License: MD-12345'}</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Clock className="w-4 h-4 text-amethyst flex-shrink-0 mt-1" />
+                        <p className="text-sm text-foreground">{doctor.experience || '10 years'} of experience</p>
+                      </div>
+                    </div> 
                 </div>
               </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ================= STATS ================= */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {stats.map((stat, idx) => {
+            const Icon = stat.icon
+            return (
+              <div key={idx} className="bg-card border-purple-glow rounded-xl p-6 shadow-purple hover:shadow-purple-lg transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <Icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
+                <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
+                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+              </div>
+            )
+          })}
+        </div>
+
+          {/* ================= BIO ================= */}
+          <section className="border rounded-2xl p-10 shadow-sm mb-8 border-purple-glow shadow-purple hover:shadow-purple-lg transition-all">
+            <h2 className="text-2xl font-semibold mb-6">
+              Professional Bio
+            </h2>
+            <p className="leading-relaxed text-muted-foreground">
+              {doctor.about}
+            </p>
+          </section>
+
+          {/* ================= AVAILABILITY ================= */}
+          <section className=''>
+            <h2 className="text-2xl font-semibold mb-6 ">
+              Availability
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 ">
+              {doctor.availability.map((slot: string, i: number) => (
+                <div
+                  key={i}
+                  className="border rounded-xl px-6 py-4 flex items-center gap-3 border-purple-glow shadow-purple hover:shadow-purple-lg transition-all"
+                >
+                  <Clock className="w-5 h-5 text-purple-600" />
+                  {slot}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ================= BOOK ================= */}
+          <div className="pt-6 text-center">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-10 py-4 rounded-xl bg-purple-600 text-white font-medium shadow-md hover:opacity-90 transition-all shadow-purple"
+            >
+              Book Appointment
+            </button>
+          </div>
+
+          {/* ================= ADD REVIEW ================= */}
+          <section className="border rounded-2xl p-10 shadow-sm mt-8 mb-8  border-purple-glow shadow-purple hover:shadow-purple-lg transition-all">
+            <h2 className="text-2xl font-semibold mb-6">
+              Write a Review
+            </h2>
+
+            <div className="flex gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map(n => (
+                <Star
+                  key={n}
+                  onClick={() => setRating(n)}
+                  className={`w-6 h-6 cursor-pointer ${n <= rating
+                    ? 'text-yellow-500 fill-yellow-500'
+                    : 'text-gray-300'
+                    }`}
+                />
+              ))}
             </div>
 
-            {/* About Section */}
-            {doctor.about && (
-              <div className="mb-8 pt-8 border-t border-border">
-                <h3 className="text-xl font-bold mb-4">About</h3>
-                <p className="text-muted-foreground leading-relaxed">{doctor.about}</p>
-              </div>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Share your experience..."
+              className="w-full border rounded-xl p-4 mb-4"
+            />
+
+            <button
+              onClick={submitReview}
+              className="px-8 py-3 bg-purple-600 text-white rounded-xl shadow-md"
+            >
+              Submit Review
+            </button>
+          </section>
+
+          {/* ================= REVIEWS ================= */}
+          <section className="border rounded-2xl p-10 shadow-sm  border-purple-glow shadow-purple hover:shadow-purple-lg transition-all">
+            <h2 className="text-2xl font-semibold mb-8">
+              Patient Reviews
+            </h2>
+
+            {reviews.length === 0 && (
+              <p className="text-muted-foreground">No reviews yet</p>
             )}
 
-            {/* Available Time Slots */}
-            <div className="mb-8 pt-8 border-t border-border">
-              <h3 className="text-xl font-bold mb-6">Available Time Slots</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {doctor.availability.map((slot: string, idx: number) => (
-                  <div
-                    key={idx}
-                    className="p-4 bg-secondary/50 hover:bg-secondary border border-border rounded-lg text-foreground font-medium transition-colors cursor-pointer"
-                  >
-                    {slot}
+            <div className="space-y-6">
+              {reviews.map(r => (
+                <div key={r.id} className="border rounded-xl p-6 shadow-sm bg-gradient-to-r from-amethyst/10 to-french-violet/10  border-purple-glow  gap-3">
+                  <div className="flex justify-between">
+                    <p className="font-medium">{r.patientName}</p>
+                    <div className="flex gap-1">
+                      {[...Array(r.rating)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className="w-4 h-4 text-yellow-500 fill-yellow-500"
+                        />
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                  <p className="mt-3 text-muted-foreground">
+                    {r.comment}
+                  </p>
+                </div>
+              ))}
             </div>
+          </section>
 
-            {/* Book Appointment Button */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex-1 px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg transition-colors duration-300"
-              >
-                Book Appointment
-              </button>
-            </div>
-          </div>
+          {/* <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+            <AppointmentForm />
+          </Modal> */}
         </div>
-      </div>
-
-      {/* Appointment Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="space-y-4">
-          <h3 className="text-2xl font-bold text-center">Book Appointment</h3>
-          <p className="text-center text-muted-foreground">Schedule your visit with {doctor.name}</p>
-          <AppointmentForm onSubmit={handleBook} />
-        </div>
-      </Modal>
     </main>
-  );
+  )
+}
+
+/* ================= REUSABLE ================= */
+
+
+
+function Stat({ title, value }: any) {
+  return (
+    <div className="border rounded-xl p-8 shadow-sm hover:shadow-md transition">
+      <p className="text-muted-foreground">{title}</p>
+      <p className="text-3xl font-semibold mt-2">{value}</p>
+    </div>
+  )
 }
