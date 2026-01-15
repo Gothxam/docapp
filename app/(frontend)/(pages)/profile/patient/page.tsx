@@ -40,7 +40,7 @@ export default function PatientProfile() {
   if (!p) return null
   if (p.startsWith('http')) return p
 
-  return `http://localhost:5678/uploads/patients/${p}`
+  return `${process.env.NEXT_API_URL}/uploads/patients/${p}`
 }
 setProfilePicture(normalize(profile.profilePicture))     
       } catch (error) {
@@ -205,7 +205,7 @@ const validateForm = () => {
       if (!p) return null
       if (p.startsWith('http')) return p
 
-      return `http://localhost:5678/uploads/patients/${p}`
+      return `${process.env.NEXT_API_URL}/uploads/patients/${p}`
     }
 setProfilePicture(normalize(updated.profilePicture))     
       window.dispatchEvent(new Event('user-updated'))
