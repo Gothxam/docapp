@@ -129,7 +129,7 @@ export function AppSidebar() {
     }
   }, [])
 
-  const isDoctor = user?.userType === "doctor"
+  const isDoctor = user?.role === "doctor"
   
   // Combine items based on user type
   let allItems = [...commonItems]
@@ -178,7 +178,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <div className="px-3 py-3 bg-gradient-to-r from-amethyst/10 to-french-violet/10 border border-purple-glow rounded-lg">
                 <p className="text-sm font-semibold truncate text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground capitalize mt-1.5">{user.userType}</p>
+                <p className="text-xs text-muted-foreground capitalize mt-1.5">{user.role}</p>
               </div>
             </SidebarGroupContent>
           </SidebarGroup>

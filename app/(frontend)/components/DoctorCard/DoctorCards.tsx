@@ -2,10 +2,19 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
+// use native img to avoid Next/Image loader issues during debugging
+import { useEffect } from 'react'
 import { Star, MapPin, Award } from "lucide-react"
 
-export default function DoctorCard({ doctor }: { doctor: any }) {
+export default function DoctorCards({ doctor }: { doctor: any }) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') console.debug('Doctor image:', doctor?.image)
+  }, [doctor?.image])
+
+  // Note: removed programmatic HEAD/GET verification because it triggers CORS/fetch
+  // errors when requesting cross-origin avatar services. Rely on the native
+  // <img> loading and the `onError` fallback to `ui-avatars` instead.
+
   const getExperienceColor = (experience: string) => {
     if (experience.includes('10+') || experience.includes('15+') || experience.includes('20+')) return 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
     if (experience.includes('5') || experience.includes('7')) return 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
@@ -17,14 +26,17 @@ export default function DoctorCard({ doctor }: { doctor: any }) {
       {/* Image Section */}
       <div className="relative h-40 bg-gradient-to-r from-primary/20 to-primary/10 flex items-center justify-center overflow-hidden">
         <div className="relative w-28 h-28">
-          <Image
-            src={doctor.image}
+          <img
+            src={doctor.image || '/doctor-placeholder.png'}
             alt={doctor.name}
-            fill
-            sizes="112px"
-            className="rounded-full object-cover border-4 border-card shadow-lg"
-            priority
+            className="rounded-full object-cover border-4 border-card shadow-lg w-full h-full"
+            onError={(e) => {
+              const t = e.currentTarget as HTMLImageElement
+              t.onerror = null
+              t.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.name)}`
+            }}
           />
+
         </div>
         {/* Rating Badge */}
         <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 rounded-full px-3 py-1 flex items-center gap-1 font-semibold text-sm shadow-lg">
@@ -48,21 +60,31 @@ export default function DoctorCard({ doctor }: { doctor: any }) {
         </div>
 
         {/* Available Slots */}
-        {doctor.availability && doctor.availability.length > 0 && (
+        {doctor.availability?.days?.length > 0 && (
           <div className="mb-4">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Available Slots:</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">
+              Available Days:
+            </p>
+
             <div className="flex flex-wrap gap-1">
-              {doctor.availability.slice(0, 2).map((slot: string, idx: number) => (
-                <span key={idx} className="text-xs bg-secondary/50 text-secondary-foreground px-2 py-1 rounded">
-                  {slot}
+              {doctor.availability.days.slice(0, 2).map((day: string, idx: number) => (
+                <span
+                  key={idx}
+                  className="text-xs bg-secondary/50 text-secondary-foreground px-2 py-1 rounded"
+                >
+                  {day}
                 </span>
               ))}
-              {doctor.availability.length > 2 && (
-                <span className="text-xs bg-secondary/50 text-secondary-foreground px-2 py-1 rounded">+{doctor.availability.length - 2} more</span>
+
+              {doctor.availability.days.length > 2 && (
+                <span className="text-xs bg-secondary/50 text-secondary-foreground px-2 py-1 rounded">
+                  +{doctor.availability.days.length - 2} more
+                </span>
               )}
             </div>
           </div>
         )}
+
 
         {/* Button */}
         <Link

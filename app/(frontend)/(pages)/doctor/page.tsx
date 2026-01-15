@@ -4,7 +4,8 @@
 import { useEffect, useState } from 'react'
 import { Search, MapPin, Stethoscope } from 'lucide-react'
 import DoctorCard from '../../components/DoctorCard/DoctorCards'
-import { mockDoctors } from '../../data/mockDoctors'
+// import { mockDoctors } from '../../data/mockDoctors'
+import api from '../../utils/axios'
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<any[]>([])
@@ -15,7 +16,6 @@ export default function DoctorsPage() {
   // Get all specialties
   const specialties = Array.from(
     new Set([
-      ...mockDoctors.map(d => d.specialty),
       ...doctors
         .filter(d => d.specialty)
         .map(d => d.specialty)
@@ -23,52 +23,85 @@ export default function DoctorsPage() {
   ).filter(Boolean)
 
   useEffect(() => {
-    let allDoctors = [...mockDoctors]
-    const users = JSON.parse(localStorage.getItem('users') || '[]')
-    const registeredDoctors = users.filter((user: any) => user.userType === 'doctor').map((user: any, idx: number) => ({
-      id: `registered-${idx}`,
-      name: user.name,
-      specialty: user.specialization || 'Specialist',
-      experience: user.experience || 'Not specified',
-      image: `https://ui-avatars.com/api/?name=${user.name}&background=8B5CF6&color=fff`,
-      availability: user.availability || ['Mon 9-11 AM', 'Wed 2-4 PM', 'Fri 10-12 AM'],
-      rating: user.rating || 4.5,
-      reviews: user.reviews || '',
-      about: user.bio || 'Experienced healthcare professional'
-    }))
+    const getUsers = async () => {
+      try {
+        const res = await api.get('/doctor')
+        const users = res.data?.data ?? res.data
 
-    allDoctors = [...allDoctors, ...registeredDoctors]
-    setDoctors(allDoctors)
-  }, [])
+        const resolveImage = (profilePicture: any, name: string) => {
+          const apiBase = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
+          if (!profilePicture) return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`
+          const p = String(profilePicture)
+          if (p.startsWith('http')) return p
+          // handle protocol-relative urls (e.g. //example.com/..)
+          if (p.startsWith('//')) return `${typeof window !== 'undefined' ? window.location.protocol : 'http:'}${p}`
 
-  useEffect(() => {
-    const handleUserUpdated = () => {
-      let allDoctors = [...mockDoctors]
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
-      const registeredDoctors = users.filter((user: any) => user.userType === 'doctor').map((user: any, idx: number) => ({
-        id: `registered-${idx}`,
-        name: user.name,
-        specialty: user.specialization || 'Specialist',
-        experience: user.experience || 'Not specified',
-        image: `https://ui-avatars.com/api/?name=${user.name}&background=8B5CF6&color=fff`,
-        availability: user.availability || ['Mon 9-11 AM', 'Wed 2-4 PM', 'Fri 10-12 AM'],
-        rating: user.rating || 4.5,
-        reviews: user.reviews || '',
-        about: user.bio || 'Experienced healthcare professional'
-      }))
-      allDoctors = [...allDoctors, ...registeredDoctors]
-      setDoctors(allDoctors)
+          // At this point prefer relative paths so production (same-origin or proxy)
+          // can serve the files. If NEXT_PUBLIC_API_URL is provided, prefix it.
+          const prefix = apiBase || ''
+
+          // already an absolute path on the backend e.g. '/uploads/abc.jpg'
+          if (p.startsWith('/')) {
+            // ensure doctor uploads live under /uploads/doctors/
+            if (p.startsWith('/uploads/doctors/')) return prefix ? `${prefix}${p}` : p
+            if (p.startsWith('/uploads/')) return prefix ? `${prefix}/uploads/doctors/${p.replace('/uploads/','')}` : `/uploads/doctors/${p.replace('/uploads/','')}`
+            return prefix ? `${prefix}${p}` : p
+          }
+
+          // sometimes backend returns 'uploads/abc.jpg' or already contains uploads
+          if (p.includes('/uploads/')) {
+            if (p.includes('/uploads/doctors/')) return prefix ? `${prefix}/${p.replace(/^\//, '')}` : `/${p.replace(/^\//, '')}`
+            return prefix ? `${prefix}/${p.replace(/^\//, '').replace('uploads/','uploads/doctors/')}` : `/${p.replace(/^\//, '').replace('uploads/','uploads/doctors/')}`
+          }
+
+          // otherwise assume it's a plain filename placed under uploads/doctors
+          return prefix ? `${prefix}/uploads/doctors/${p}` : `/uploads/doctors/${p}`
+        }
+
+        const registeredDoctors = users
+          .filter((user: any) => user.role === 'doctor')
+          .map((user: any) => ({
+            id: user._id,
+            name: user.name,
+            specialty: user.specialization || 'Specialist',
+            experience: user.experience || 'Not specified',
+            image: resolveImage(user.profilePicture, user.name),
+            availability: (() => {
+              if (!user.availability) return { days: [], timeSlots: [] }
+              if (Array.isArray(user.availability.days) && user.availability.days.length > 0) {
+                return {
+                  days: user.availability.days,
+                  timeSlots: user.availability.timeSlots ?? [],
+                }
+              }
+              if (Array.isArray(user.availability.slots) && user.availability.slots.length > 0) {
+                const days = user.availability.slots.map((s: any) => s.day)
+                const timeSlots = user.availability.slots.map((s: any) => `${s.fromTime} - ${s.toTime}`)
+                return { days, timeSlots }
+              }
+              return { days: [], timeSlots: [] }
+            })(),
+            rating: user.rating || 4.5,
+            reviews: user.reviews || '',
+            about: user.bio || 'Experienced healthcare professional'
+          }))
+
+        setDoctors(registeredDoctors)
+      } catch (error) {
+        console.log(error)
+      }
     }
 
-    window.addEventListener('user-updated', handleUserUpdated)
-    return () => window.removeEventListener('user-updated', handleUserUpdated)
-  }, [])
+    getUsers()
 
-  // Filter doctors based on search and specialty
+    const onUserUpdated = () => getUsers()
+    window.addEventListener('user-updated', onUserUpdated)
+    return () => window.removeEventListener('user-updated', onUserUpdated)
+  }, [])
+    
   useEffect(() => {
     let filtered = doctors.filter(doctor => {
-      const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) || doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesSpecialty = selectedSpecialty === 'all' || doctor.specialty === selectedSpecialty
       return matchesSearch && matchesSpecialty
     })

@@ -24,7 +24,7 @@ export default function HomePage() {
       const parsedUser = JSON.parse(storedUser)
       setUser(parsedUser)
       // If doctor is logged in, redirect to schedule
-      if (parsedUser.userType === "doctor") {
+      if (parsedUser.role === "doctor") {
         router.push("/")
       }
     }
@@ -61,7 +61,7 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                {!user || user.userType !== "doctor" ? (
+                {!user || user.role !== "doctor" ? (
                   <Link
                     href="/doctor"
                     className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-all duration-300 shadow-purple hover:shadow-purple-lg"
@@ -189,7 +189,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== DOCTORS PREVIEW (Only for non-doctors) ===== */}
-      {!user || user.userType !== "doctor" ? (
+      {!user || user.role !== "doctor" ? (
         <section className="w-full py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-background">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12" data-aos="fade-up">
@@ -257,7 +257,7 @@ export default function HomePage() {
               >
                 Create Your Account
               </Link>
-              {!user || user.userType !== "doctor" ? (
+              {!user || user.role !== "doctor" ? (
                 <Link
                   href="/doctor"
                   className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 border-2 font-semibold rounded-lg transition-all border-amethyst text-amethyst hover-bg-purple"

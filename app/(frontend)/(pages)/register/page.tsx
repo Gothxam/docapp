@@ -1,5 +1,5 @@
 "use client"
-
+import api from "../../utils/axios"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -17,30 +17,49 @@ export default function RegisterPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   const onSubmit = async (data: any) => {
-    setIsLoading(true)
-    setError("")
+    
+  if (!selectedRole) {
+    setError("Please select account type");
+    return;
+  }
 
-    try {
-      const users = JSON.parse(localStorage.getItem("users") || "[]")
+  setIsLoading(true);
+  setError("");
 
-      // check if email already exists
-      const exists = users.some((u: any) => u.email === data.email)
-      if (exists) {
-        setError("An account with this email already exists. Please login instead.")
-        setIsLoading(false)
-        return
-      }
+  try {
+    localStorage.clear()
+    const response = await api.post("/auth/register", {
+      ...data,
+      role: selectedRole,
+    });
 
-      // add new user
-      const newUser = { ...data }
-      users.push(newUser)
-      localStorage.setItem("users", JSON.stringify(users))
+    // store JWT
+    // localStorage.setItem("token", response.data.data.token);
+    // localStorage.setItem("user", JSON.stringify(response.data.data.user || {}))
+    // redirect
+    router.push("/login");
+       // const users = JSON.parse(localStorage.getItem("users") || "[]")
 
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // // check if email already exists
+      // const exists = users.some((u: any) => u.email === data.email)
+      // if (exists) {
+      //   setError("An account with this email already exists. Please login instead.")
+      //   setIsLoading(false)
+      //   return
+      // }
 
-      router.push("/login")
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+      // // add new user
+      // const newUser = { ...data }
+      // users.push(newUser)
+      // localStorage.setItem("users", JSON.stringify(users))
+
+      // await new Promise(resolve => setTimeout(resolve, 500))
+
+      // router.push("/login")
+      console.log(response)
+    } catch (err:any) {
+    console.error(err);
+    setError(err.response?.data?.message || 'Something went wrong');   
     } finally {
       setIsLoading(false)
     }
@@ -163,7 +182,7 @@ export default function RegisterPage() {
               <div className="relative">
                 <Users className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
-                  {...register("userType", { required: "Please select an account type" })}
+                  {...register("role", { required: "Please select an account type" })}
                   type="hidden"
                   value={selectedRole}
                 />
@@ -171,7 +190,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`w-full pl-10 pr-10 py-2.5 rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 text-left ${
-                    errors.userType
+                    errors.role
                       ? 'border-red-300 bg-red-50 dark:bg-red-500/10'
                       : 'border-input bg-background hover:border-input/80'
                   }`}
@@ -190,7 +209,7 @@ export default function RegisterPage() {
                       type="button"
                       onClick={() => {
                         setSelectedRole('patient')
-                        setValue('userType', 'patient')
+                        setValue('role', 'patient')
                         setIsDropdownOpen(false)
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors first:rounded-t-lg"
@@ -201,7 +220,7 @@ export default function RegisterPage() {
                       type="button"
                       onClick={() => {
                         setSelectedRole('doctor')
-                        setValue('userType', 'doctor')
+                        setValue('role', 'doctor')
                         setIsDropdownOpen(false)
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors last:rounded-b-lg"
@@ -211,8 +230,8 @@ export default function RegisterPage() {
                   </div>
                 )}
               </div>
-              {errors.userType && (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">{errors.userType.message as string}</p>
+              {errors.role && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">{errors.role.message as string}</p>
               )}
             </div>
 

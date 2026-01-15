@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { User, Mail, Phone, Calendar, Search, AlertCircle } from "lucide-react"
+import api from "../../utils/axios"
 
 interface Patient {
   id: string
@@ -12,6 +13,8 @@ interface Patient {
   date: string
   status: string
   reason?: string
+  completedCount?: number
+  lastDate?: string
 }
 
 export default function DoctorPatients() {
@@ -21,49 +24,87 @@ export default function DoctorPatients() {
   const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
 
+  // import api from "@/utils/axios"
+
+  const [completedCount, setCompletedCount] = useState<number>(0)
+
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (!storedUser) {
-      router.push("/login")
-      return
-    }
+  const fetchAppointments = async () => {
+    try {
+      // 1️⃣ AUTH + ROLE CHECK
+      const doctorRes = await api.get("/doctor/profile")
+      setUser(doctorRes.data)
 
-    const parsedUser = JSON.parse(storedUser)
-    if (parsedUser.userType !== "doctor") {
-      router.push("/patient-dashboard")
-      return
-    }
+      // 2️⃣ FETCH DOCTOR APPOINTMENTS
+      const apptRes = await api.get("/appointments")
+      console.log("dfghj",apptRes)
+      // 3️⃣ KEEP ONLY COMPLETED
+      const completedAppointments = apptRes.data.filter((appt: any) => appt.status === "completed")
 
-    setUser(parsedUser)
+      // total completed consultations (count every appointment)
+      setCompletedCount(completedAppointments.length)
 
-    // Get all completed appointments for this doctor
-    const storedAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
-    const doctorAppointments = storedAppointments
-      .filter((appt: any) => appt.doctorName === parsedUser.name)
-      .filter((appt: any) => appt.status === "Completed")
+      // 4️⃣ AGGREGATE PER PATIENT (keep patient once but include count and lastDate)
+      const byPatient: Record<string, Patient & { completedCount: number; lastDate?: string; reasons: string[] }> = {}
 
-    // Remove duplicates by patient email
-    const uniquePatients: { [key: string]: Patient } = {}
-    doctorAppointments.forEach((appt: any) => {
-      if (!uniquePatients[appt.patientEmail]) {
-        uniquePatients[appt.patientEmail] = {
-          id: appt.id,
-          patientName: appt.patientName,
-          patientEmail: appt.patientEmail,
-          phoneNumber: appt.phoneNumber || "N/A",
-          date: appt.date,
-          status: appt.status,
-          reason: appt.reason,
+      completedAppointments.forEach((appt: any) => {
+        const patient = appt.patient
+        if (!patient) return
+        const id = patient._id || patient.email || patient.name
+        const apptDate = appt.appointmentDate || appt.date
+
+        if (!byPatient[id]) {
+          byPatient[id] = {
+            id,
+            patientName: patient.name || 'Unknown',
+            patientEmail: patient.email || 'unknown',
+            phoneNumber: patient.phoneNumber || 'N/A',
+            date: apptDate,
+            lastDate: apptDate,
+            status: appt.status,
+            reason: appt.reason,
+            completedCount: 1,
+            reasons: appt.reason ? [appt.reason] : []
+          }
+        } else {
+          byPatient[id].completedCount = (byPatient[id].completedCount || 0) + 1
+          // update lastDate if this appointment is more recent
+          if (apptDate && (!byPatient[id].lastDate || new Date(apptDate) > new Date(byPatient[id].lastDate!))) {
+            byPatient[id].lastDate = apptDate
+            byPatient[id].date = apptDate
+          }
+          if (appt.reason) byPatient[id].reasons.push(appt.reason)
         }
+      })
+
+      const list = Object.values(byPatient).map(p => ({
+        id: p.id,
+        patientName: p.patientName,
+        patientEmail: p.patientEmail,
+        phoneNumber: p.phoneNumber,
+        date: p.date,
+        status: p.status,
+        reason: p.reasons && p.reasons.length ? p.reasons[p.reasons.length - 1] : p.reason,
+        completedCount: p.completedCount,
+        lastDate: p.lastDate
+      }))
+
+      setPatients(list)
+      setFilteredPatients(list)
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        router.push("/login")
+      } else if (err.response?.status === 403) {
+        router.push("/patient-dashboard")
+      } else {
+        console.error("Failed to fetch doctor patients", err)
       }
-    })
+    }
+  }
 
-    const patientList = Object.values(uniquePatients)
-    setPatients(patientList)
-    setFilteredPatients(patientList)
-  }, [router])
-
-  useEffect(() => {
+  fetchAppointments()
+}, [router])
+ useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredPatients(patients)
     } else {
@@ -96,7 +137,7 @@ export default function DoctorPatients() {
           </div>
           <div className="bg-card border-purple-glow rounded-xl p-6 shadow-purple">
             <p className="text-sm text-muted-foreground mb-2">Completed Consultations</p>
-            <p className="text-3xl font-bold text-amethyst">{patients.length}</p>
+            <p className="text-3xl font-bold text-amethyst">{completedCount}</p>
           </div>
           <div className="bg-card border-purple-glow rounded-xl p-6 shadow-purple">
             <p className="text-sm text-muted-foreground mb-2">Search Results</p>
@@ -159,7 +200,7 @@ export default function DoctorPatients() {
                     <p className="text-xs text-muted-foreground mb-1 font-semibold">Last Consultation</p>
                     <p className="text-sm text-foreground flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-amethyst flex-shrink-0" />
-                      {new Date(patient.date).toLocaleDateString()}
+                      {new Date(patient.lastDate || patient.date).toLocaleDateString()}
                     </p>
                   </div>
 
@@ -167,7 +208,7 @@ export default function DoctorPatients() {
                   <div>
                     <p className="text-xs text-muted-foreground mb-1 font-semibold">Status</p>
                     <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-300">
-                      Completed
+                      {patient.completedCount ? `${patient.completedCount} Completed` : 'Completed'}
                     </span>
                   </div>
                 </div>

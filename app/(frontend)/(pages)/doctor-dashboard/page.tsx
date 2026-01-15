@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { CheckCircle, Clock, AlertCircle, ZapOff, Users, Calendar } from "lucide-react"
+import api from "../../utils/axios"
+import toast from "react-hot-toast"
 
 export default function DoctorDashboard() {
   const [user, setUser] = useState<any>(null)
@@ -12,113 +14,166 @@ export default function DoctorDashboard() {
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [stats, setStats] = useState({ total: 0, pending: 0, confirmed: 0, completed: 0 })
   const router = useRouter()
+const normalizeAppointments = (list: any[]) => {
+  return list.map((a) => ({
+    id: a._id,
+    status: (a.status || "").toLowerCase(),
+    appointmentDate: a.appointmentDate,
+    reason: a.reason,
+    notes: a.notes,
+
+    patient: typeof a.patient === "object" ? a.patient : null,
+
+    // 🔥 FIX HERE
+    doctorId:
+      typeof a.doctor === "string"
+        ? a.doctor
+        : a.doctor?._id?.toString(),
+  }))
+}
+
+
+const statusToast = (status: string) => {
+  switch (status) {
+    case "approved":
+      toast("Appointment approved", {
+        style: {
+          background: "#16a34a", // green
+          color: "white",
+        },
+      })
+      break
+
+    case "completed":
+      toast("Appointment completed", {
+        style: {
+          background: "#9d4edd", // blue
+          color: "white",
+        },
+      })
+      break
+
+    case "rejected":
+      toast("Appointment rejected", {
+        style: {
+          background: "#dc2626", // red
+          color: "white",
+        },
+      })
+      break
+
+    case "pending":
+      toast("Appointment pending", {
+        style: {
+          background: "#ca8a04", // yellow
+          color: "black",
+        },
+      })
+      break
+  }
+}
+
+const calculateStats = (list: any[]) => ({
+  total: list.length,
+  pending: list.filter(a => a.status === "pending").length,
+  confirmed: list.filter(a => a.status === "approved").length,
+  completed: list.filter(a => a.status === "completed").length,
+})
+  useEffect(() => {
+    const fetchAppointments = async () => {
+  const token = localStorage.getItem("token")
+  if (!token) {
+    router.push("/login")
+    return
+  }
+
+      const profile = await api.get('/doctor/profile')
+      const doctor = profile.data?.data ?? profile.data
+  setUser(doctor)
+
+  const res = await api.get("/appointments", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  console.log(res)
+  
+
+  const rawList = res.data?.data ?? res.data
+  const normalized = normalizeAppointments(rawList)
+
+  const doctorAppointments = normalized.filter(
+    (a) => a.doctorId === doctor._id
+  )
+ 
+
+  console.log("dapp",doctorAppointments)
+  setAppointments(doctorAppointments)
+  setFilteredAppointments(doctorAppointments) 
+}
+    fetchAppointments()
+  }, [router])
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (!storedUser) {
-      router.push("/login")
-      return
-    }
-
-    const parsedUser = JSON.parse(storedUser)
-    if (parsedUser.userType !== "doctor") {
-      router.push("/patient-dashboard")
-      return
-    }
-
-    setUser(parsedUser)
-
-    // Get appointments for this doctor
-    const storedAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
-    const doctorAppointments = storedAppointments.filter((appt: any) => appt.doctorName === parsedUser.name)
-    setAppointments(doctorAppointments)
-    setFilteredAppointments(doctorAppointments)
-
-    // Calculate stats
-    setStats({
-      total: doctorAppointments.length,
-      pending: doctorAppointments.filter((a: any) => a.status === "Pending").length,
-      confirmed: doctorAppointments.filter((a: any) => a.status === "Confirmed").length,
-      completed: doctorAppointments.filter((a: any) => a.status === "Completed").length,
-    })
-  }, [router])
+  setStats(calculateStats(appointments))
+}, [appointments])
 
   // Filter appointments when selectedFilter changes
   useEffect(() => {
-    let filtered = appointments
-    if (selectedFilter === "pending") {
-      filtered = appointments.filter((a) => a.status === "Pending")
-    } else if (selectedFilter === "confirmed") {
-      filtered = appointments.filter((a) => a.status === "Confirmed")
-    } else if (selectedFilter === "completed") {
-      filtered = appointments.filter((a) => a.status === "Completed")
-    }
-    setFilteredAppointments(filtered)
-  }, [selectedFilter, appointments])
+    const filteredAppointments = appointments.filter((a) => {
+  if (selectedFilter === "pending") return a.status === "pending"
+  if (selectedFilter === "confirmed") return a.status === "approved"
+  if (selectedFilter === "completed") return a.status === "completed"
+  return true
+})
+    setFilteredAppointments(filteredAppointments)
+  }, [selectedFilter,appointments])
 
-  // Listen for appointment updates
-  useEffect(() => {
-    const handleAppointmentsUpdated = () => {
-      const storedUser = localStorage.getItem("user")
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser)
-        const storedAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
-        const doctorAppointments = storedAppointments.filter((appt: any) => appt.doctorName === parsedUser.name)
-        setAppointments(doctorAppointments)
 
-        // Apply current filter
-        let filtered = doctorAppointments
-        if (selectedFilter === "pending") {
-          filtered = doctorAppointments.filter((a:any) => a.status === "Pending")
-        } else if (selectedFilter === "confirmed") {
-          filtered = doctorAppointments.filter((a: any) => a.status === "Confirmed")
-        } else if (selectedFilter === "completed") {
-          filtered = doctorAppointments.filter((a:any) => a.status === "Completed")
-        }
-        setFilteredAppointments(filtered)
-
-        setStats({
-          total: doctorAppointments.length,
-          pending: doctorAppointments.filter((a: any) => a.status === "Pending").length,
-          confirmed: doctorAppointments.filter((a: any) => a.status === "Confirmed").length,
-          completed: doctorAppointments.filter((a: any) => a.status === "Completed").length,
-        })
-      }
-    }
-
-    window.addEventListener('appointments-updated', handleAppointmentsUpdated)
-    return () => window.removeEventListener('appointments-updated', handleAppointmentsUpdated)
-  }, [selectedFilter])
 
   if (!user) {
     return <div className="p-6 text-center text-lg">Loading...</div>
   }
 
-  const handleUpdateStatus = (index: number, newStatus: string) => {
-    const updatedAppointments = [...appointments]
-    updatedAppointments[index].status = newStatus
-    setAppointments(updatedAppointments)
-    localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
-    window.dispatchEvent(new Event('appointments-updated'))
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+  const token = localStorage.getItem("token")
 
-    // Update stats
-    setStats({
-      total: updatedAppointments.length,
-      pending: updatedAppointments.filter((a) => a.status === "Pending").length,
-      confirmed: updatedAppointments.filter((a) => a.status === "Confirmed").length,
-      completed: updatedAppointments.filter((a) => a.status === "Completed").length,
-    })
+  // optimistic UI update
+  setAppointments(prev =>
+    prev.map(a =>
+      a.id === id ? { ...a, status: newStatus } : a
+    )
+  )
+
+  statusToast(newStatus)
+
+  try {
+    await api.patch(
+      `/appointments/${id}/status`,
+      { status: newStatus },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+  } catch (err) {
+    toast.error("Failed to update appointment")
+
+    // rollback if API fails
+    setAppointments(prev =>
+      prev.map(a =>
+        a.id === id ? { ...a, status: "pending" } : a
+      )
+    )
   }
+}
+
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "Pending":
+      case "pending":
         return <AlertCircle className="w-5 h-5 text-yellow-500" />
-      case "Confirmed":
+      case "approved":
         return <CheckCircle className="w-5 h-5 text-green-500" />
-      case "Completed":
+      case "completed":
         return <CheckCircle className="w-5 h-5 text-blue-500" />
-      case "Rejected":
+      case "rejected":
         return <ZapOff className="w-5 h-5 text-red-500" />
       default:
         return <Clock className="w-5 h-5 text-gray-500" />
@@ -127,13 +182,13 @@ export default function DoctorDashboard() {
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case "Pending":
+      case "pending":
         return "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
-      case "Confirmed":
+      case "approved":
         return "bg-green-500/20 text-green-600 dark:text-green-400"
-      case "Completed":
+      case "completed":
         return "bg-amethyst/20 text-amethyst dark:text-amethyst/80"
-      case "Rejected":
+      case "rejected":
         return "bg-red-500/20 text-red-600 dark:text-red-400"
       default:
         return "bg-muted text-muted-foreground"
@@ -144,7 +199,7 @@ export default function DoctorDashboard() {
     <main className="w-full min-h-screen">
       {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Welcome, Dr. {user.name}! 👨‍⚕️</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">Welcome, Dr. <span className="text-amethyst">{user?.name}</span> 👨‍⚕️</h1>
         <p className="text-muted-foreground">Manage your appointments and patient consultations</p>
       </div>
 
@@ -241,9 +296,10 @@ export default function DoctorDashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           {getStatusIcon(appt.status || "Pending")}
-                          <p className="font-semibold text-lg text-foreground">Patient: {appt.patientName || "Unknown"}</p>
+                          <p className="font-semibold text-lg text-foreground">Patient: {appt.patient?.name || "Unknown"}</p>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">Email: {appt.patientEmail}</p>
+                        <p className="text-sm text-muted-foreground truncate">Email: {appt.patient?.email || "N/A"}
+                        </p>
                       </div>
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${getStatusBadgeColor(appt.status || "Pending")}`}>
                         {appt.status || "Pending"}
@@ -257,7 +313,7 @@ export default function DoctorDashboard() {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground font-medium">Scheduled</p>
-                        <p className="text-sm text-foreground">{new Date(appt.date).toLocaleDateString()} {new Date(appt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-sm text-foreground">{new Date(appt.appointmentDate).toLocaleDateString()} {new Date(appt.appointmentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
 
@@ -270,25 +326,25 @@ export default function DoctorDashboard() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                      {appt.status === "Pending" && (
+                      {appt.status === "pending" && (
                         <>
                           <button
-                            onClick={() => handleUpdateStatus(originalIdx, "Confirmed")}
+                            onClick={() => handleUpdateStatus(appt.id, "approved")}
                             className="flex-1 min-w-[120px] px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-semibold shadow-lg"
                           >
                             Accept
                           </button>
                           <button
-                            onClick={() => handleUpdateStatus(originalIdx, "Rejected")}
+                            onClick={() => handleUpdateStatus(appt.id, "rejected")}
                             className="flex-1 min-w-[120px] px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm font-semibold shadow-lg"
                           >
                             Reject
                           </button>
                         </>
                       )}
-                      {appt.status === "Confirmed" && (
+                      {appt.status === "approved" && (
                         <button
-                          onClick={() => handleUpdateStatus(originalIdx, "Completed")}
+                          onClick={() => handleUpdateStatus(appt.id, "completed")}
                           className="flex-1 min-w-[120px] px-3 py-2 bg-gradient-to-r from-amethyst to-french-violet text-white rounded-lg transition text-sm font-semibold shadow-purple hover:opacity-90"
                         >
                           Mark Completed
@@ -310,23 +366,23 @@ export default function DoctorDashboard() {
             <h3 className="text-lg font-bold mb-4">Your Profile</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-amethyst/80 text-sm">Name</p>
+                <p className="text-zinc/80 text-sm">Name</p>
                 <p className="font-semibold">Dr. {user.name}</p>
               </div>
               <div>
-                <p className="text-amethyst/80 text-sm">Email</p>
+                <p className="text-zinc/80 text-sm">Email</p>
                 <p className="font-semibold break-all text-sm">{user.email}</p>
               </div>
               <div>
-                <p className="text-amethyst/80 text-sm">Specialty</p>
+                <p className="text-zinc/80 text-sm">Specialty</p>
                 <p className="font-semibold">{user.specialization || "General Practitioner"}</p>
               </div>
               <div>
-                <p className="text-amethyst/80 text-sm">Experience</p>
+                <p className="text-zinc/80 text-sm">Experience</p>
                 <p className="font-semibold">{user.experience || "Not specified"}</p>
               </div>
               <div className="pt-4 border-t border-white/20">
-                <p className="text-amethyst/80 text-sm mb-2">Role</p>
+                <p className="text-zinc/80 text-sm mb-2">Role</p>
                 <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold">
                   Doctor
                 </span>
@@ -344,7 +400,7 @@ export default function DoctorDashboard() {
           <div className="bg-card border-purple-glow rounded-xl p-6 md:p-8 shadow-purple">
             <h3 className="text-lg font-bold text-foreground mb-4">Availability</h3>
             <p className="text-sm text-muted-foreground mb-4">Set your working hours and availability for patients</p>
-            <button className="w-full px-4 py-2 bg-gradient-to-r from-amethyst to-french-violet text-white rounded-lg hover:opacity-90 transition font-semibold shadow-purple">
+            <button className="w-full px-4 py-2 bg-gradient-to-r from-amethyst to-french-violet text-white rounded-lg hover:opacity-90 transition font-semibold shadow-purple" >
               Manage Availability
             </button>
           </div>

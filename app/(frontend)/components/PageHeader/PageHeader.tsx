@@ -87,7 +87,7 @@ export default function PageHeader() {
             <>
               <div className="hidden sm:flex flex-col items-end">
                 <p className="text-sm font-semibold">{user.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user.userType}</p>
+                <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
               </div>
               
               <DropdownMenu>
@@ -98,7 +98,7 @@ export default function PageHeader() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href={user.userType === 'doctor' ? '/profile/doctor' : '/profile/patient'}>
+                    <Link href={user.role === 'doctor' ? '/profile/doctor' : '/profile/patient'}>
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </Link>

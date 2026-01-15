@@ -1,50 +1,156 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import Image from 'next/image'
 import { Edit2, Save, X, Mail, MapPin, Phone, Award, Clock, Star, Users, CheckCircle, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import api from '@/app/(frontend)/utils/axios'
 
 export default function DoctorProfile() {
+
+
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState<any>({})
-  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [formData, setFormData] = useState<any>({
+    availability: {
+      isAvailable: true,
+      slots: [],
+    }
+  })
+  const [profilePicture, setProfilePicture] = useState<string | null>(null)
   const router = useRouter()
+  const [saving, setSaving] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [totalPatients, setTotalPatients] = useState(0)
+  const [totalConsultations, setTotalConsultations] = useState(0)
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-    if (!storedUser) {
-      router.push('/login')
-      return
+    const fetchProfile = async () => {
+      try {
+
+        const res = await api.get('/doctor/profile')
+        console.log("data", res)
+        setUser(res.data)
+        setFormData({
+          ...res.data,
+          availability: {
+            isAvailable: res.data.availability?.isAvailable ?? true,
+            slots: (res.data.availability?.slots || []).map((s: any) => ({
+              day: s.day,
+              fromTime: s.fromTime,
+              toTime: s.toTime,
+            })),
+          },
+        })
+        const normalize = (p?: string) => {
+      if (!p) return null
+      if (p.startsWith('http')) return p
+
+      return `http://localhost:5678/uploads/doctors/${p}`}
+        setProfilePicture(normalize(res.data.profilePicture) )
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          router.push('/login')
+        }
+      } finally {
+        setLoading(false)
+      }
     }
-    
-    const parsed = JSON.parse(storedUser)
-    if (parsed.userType !== 'doctor') {
-      router.push('/patient-dashboard')
-      return
-    }
-    
-    setUser(parsed)
-    setFormData(parsed)
-    setProfileImage(parsed.profileImage || null)
-    setLoading(false)
+
+    fetchProfile()
   }, [router])
+  
+  useEffect(() => {
+  const fetchCounts = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      // 1️⃣ get doctor profile
+      const profileRes = await api.get("/doctor/profile")
+      const doctor = profileRes.data?.data ?? profileRes.data
+
+      // 2️⃣ get appointments
+      const apptRes = await api.get("/appointments", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      const list = apptRes.data?.data ?? apptRes.data
+
+      // 3️⃣ filter appointments for this doctor
+      const doctorAppointments = list.filter(
+        (a: any) =>
+          (typeof a.doctor === "string" ? a.doctor : a.doctor?._id) === doctor._id
+      )
+
+      // 4️⃣ total consultations
+      setTotalConsultations(doctorAppointments.length)
+
+      // 5️⃣ unique patients count
+      const uniquePatientIds = new Set(
+        doctorAppointments
+          .map((a: any) => a.patient?._id)
+          .filter(Boolean)
+      )
+
+      setTotalPatients(uniquePatientIds.size)
+
+    } catch (err) {
+      console.error("Failed to fetch counts", err)
+    }
+  }
+
+  fetchCounts()
+}, [])
+
+
+  // const buildUpdatePayload = () => {
+  //   const allowedFields = [
+  //     'name',
+  //     'specialization',
+  //     'phoneNumber',
+  //     'address',
+  //     'licenseNumber',
+  //     'experience',
+  //     'bio',
+  //     'availability',
+  //     'fee',
+  //   ]
+
+  //   const payload: any = {}
+
+  //   allowedFields.forEach((key) => {
+  //     if (formData[key] !== undefined) {
+  //       payload[key] = formData[key]
+  //     }
+  //   })
+
+  //   return payload
+  // }
+
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64String = reader.result as string
-        setProfileImage(base64String)
-        setFormData({ ...formData, profileImage: base64String })
-      }
-      reader.readAsDataURL(file)
-    }
+    if (!file) return
+
+    const previewUrl = URL.createObjectURL(file)
+    setProfilePicture(previewUrl)
+    setSelectedImage(file) // store file for later upload
   }
+
+  const handleUploadImage = async () => {
+    if (!selectedImage) return; // ❌ skip if null
+
+    const formData = new FormData();
+    formData.append('file', selectedImage);
+
+    await api.post('/doctor/upload-profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data', // important
+      },
+    });
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -57,25 +163,74 @@ export default function DoctorProfile() {
 
   if (!user) return null
 
-  const handleSave = () => {
-    const updatedUser = { ...user, ...formData }
-    localStorage.setItem('user', JSON.stringify(updatedUser))
-    const users = JSON.parse(localStorage.getItem('users') || '[]')
-    const updatedUsers = users.map((u: any) => (u.email === user.email ? updatedUser : u))
-    localStorage.setItem('users', JSON.stringify(updatedUsers))
-    window.dispatchEvent(new Event('user-updated'))
-    setUser(updatedUser)
-    setIsEditing(false)
-  }
+  const handleSave = async () => {
+    try {
+      setSaving(true);
 
+      // 1️⃣ Upload image if changed
+      if (selectedImage) {
+        await handleUploadImage();
+      }
+
+      // 2️⃣ Build STRICT payload (DTO-safe)
+      const payload = {
+        name: formData.name,
+        specialization: formData.specialization,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        licenseNumber: formData.licenseNumber,
+        experience: formData.experience,
+        bio: formData.bio,
+        fee: formData.fee,
+        availability: {
+          isAvailable: formData.availability.isAvailable,
+          slots: formData.availability.slots.map((s: any) => ({
+            day: s.day,
+            fromTime: s.fromTime,
+            toTime: s.toTime,
+          })),
+        },
+      };
+
+      // 🔥 3️⃣ ACTUAL UPDATE CALL (you were missing this)
+      await api.patch('/doctor/profile', payload);
+
+      // 4️⃣ Refresh profile
+      const refreshed = await api.get('/doctor/profile');
+      setUser(refreshed.data);
+      setFormData({
+        ...refreshed.data,
+        availability: {
+          isAvailable: refreshed.data.availability?.isAvailable ?? true,
+          slots: refreshed.data.availability?.slots ?? [],
+        },
+      });
+      const normalize = (p?: string) => {
+        if (!p) return null
+        if (p.startsWith('http')) return p
+
+        return `http://localhost:5678/uploads/doctors/${p}`}
+      setProfilePicture(normalize(refreshed.data.profilePicture));
+      // notify other parts of the app (doctor list, navbar, etc.) to refresh
+      window.dispatchEvent(new Event('user-updated'))
+      setIsEditing(false);
+      setSelectedImage(null);
+    } catch (err: any) {
+      console.error('Update failed', err);
+      alert(err.response?.data?.message || 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
   const handleCancel = () => {
     setFormData(user)
     setIsEditing(false)
   }
 
   const stats = [
-    { icon: Users, label: 'Total Patients', value: '450+', color: 'text-blue-500' },
-    { icon: CheckCircle, label: 'Consultations', value: '1,200+', color: 'text-green-500' },
+    { icon: Users, label: 'Total Patients', value: totalPatients, color: 'text-blue-500' },
+    { icon: CheckCircle, label: 'Consultations', value: totalConsultations, color: 'text-green-500' },
     { icon: Star, label: 'Rating', value: user.rating || '4.8', color: 'text-yellow-500' },
     { icon: Clock, label: 'Experience', value: user.experience || '10 years', color: 'text-purple-500' },
   ]
@@ -100,16 +255,18 @@ export default function DoctorProfile() {
                   <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amethyst to-french-violet p-1 shadow-purple">
                     <div className="w-full h-full rounded-full overflow-hidden bg-card">
                       <Image
-                        src={profileImage || `https://ui-avatars.com/api/?name=${isEditing ? formData.name : user.name}&background=9d4edd&color=fff&bold=true`}
+                        src={profilePicture || `https://ui-avatars.com/api/?name=${isEditing ? formData.name : user.name}&background=9d4edd&color=fff&bold=true`}
                         alt={isEditing ? formData.name : user.name}
                         width={128}
                         height={128}
+                        unoptimized
+                        loading="eager"                        
                         className="w-full h-full object-cover"
                       />
                     </div>
                   </div>
                   <div className="absolute bottom-0 right-0 bg-green-500 w-5 h-5 rounded-full border-4 border-card"></div>
-                  
+
                   {/* Upload Button - Only in Edit Mode */}
                   {isEditing && (
                     <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
@@ -164,11 +321,11 @@ export default function DoctorProfile() {
                       </div>
                       <div className="flex items-center gap-3">
                         <Phone className="w-4 h-4 text-amethyst flex-shrink-0" />
-                        <p className="text-sm text-foreground">{user.phone || '+1 (555) 000-0000'}</p>
+                        <p className="text-sm text-foreground">{user.phoneNumber || '+1 (555) 000-0000'}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <MapPin className="w-4 h-4 text-amethyst flex-shrink-0" />
-                        <p className="text-sm text-foreground">{user.location || 'New York, USA'}</p>
+                        <p className="text-sm text-foreground">{user.address || 'New York, USA'}</p>
                       </div>
                     </div>
                   ) : (
@@ -186,8 +343,8 @@ export default function DoctorProfile() {
                         <label className="text-xs text-muted-foreground">Phone</label>
                         <input
                           type="tel"
-                          value={formData.phone || ''}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          value={formData.phoneNumber || ''}
+                          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                           className="w-full p-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-amethyst"
                           placeholder="+1 (555) 000-0000"
                         />
@@ -196,8 +353,8 @@ export default function DoctorProfile() {
                         <label className="text-xs text-muted-foreground">Location/Address</label>
                         <input
                           type="text"
-                          value={formData.location || ''}
-                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                          value={formData.address || ''}
+                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                           className="w-full p-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-amethyst"
                           placeholder="City, Country"
                         />
@@ -275,12 +432,12 @@ export default function DoctorProfile() {
               <h2 className="text-xl font-bold text-foreground mb-4">Professional Bio</h2>
               {!isEditing ? (
                 <p className="text-muted-foreground leading-relaxed">
-                  {user.about || 'Experienced healthcare professional dedicated to providing comprehensive patient care with a focus on preventive medicine and patient education.'}
+                  {user.bio || 'Experienced healthcare professional dedicated to providing comprehensive patient care with a focus on preventive medicine and patient education.'}
                 </p>
               ) : (
                 <textarea
-                  value={formData.about || ''}
-                  onChange={(e) => setFormData({ ...formData, about: e.target.value })}
+                  value={formData.bio || ''}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   className="w-full p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-amethyst"
                   rows={4}
                   placeholder="Tell patients about yourself..."
@@ -289,40 +446,108 @@ export default function DoctorProfile() {
             </div>
 
             {/* Availability Section */}
+            {/* Availability Section */}
             <div className="bg-card border-purple-glow rounded-xl p-6 shadow-purple">
               <h2 className="text-xl font-bold text-foreground mb-4">Availability</h2>
+
               {!isEditing ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(formData.availability || ['Monday 9:00 AM - 5:00 PM', 'Wednesday 9:00 AM - 5:00 PM', 'Friday 9:00 AM - 5:00 PM']).map((slot: string, idx: number) => (
-                    <div key={idx} className="bg-gradient-to-r from-amethyst/10 to-french-violet/10 border border-purple-glow rounded-lg p-4 flex items-center gap-3">
-                      <Clock className="w-4 h-4 text-amethyst flex-shrink-0" />
-                      <p className="text-sm font-medium text-foreground">{slot}</p>
+                  {(formData.availability?.slots || []).map((slot: any, idx: any) => (
+                    <div
+                      key={idx}
+                      className="bg-gradient-to-r from-amethyst/10 to-french-violet/10 border border-purple-glow rounded-lg p-4 flex items-center gap-3"
+                    >
+                      <Clock className="w-4 h-4 text-amethyst" />
+                      <p className="text-sm font-medium text-foreground">
+                        {slot.day} {slot.fromTime} - {slot.toTime}
+                      </p>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {(formData.availability || []).map((slot: string, idx: number) => (
-                    <input
-                      key={idx}
-                      type="text"
-                      value={slot}
-                      onChange={(e) => {
-                        const updated = [...formData.availability]
-                        updated[idx] = e.target.value
-                        setFormData({ ...formData, availability: updated })
-                      }}
-                      className="w-full p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-amethyst"
-                      placeholder="e.g., Monday 9:00 AM - 5:00 PM"
-                    />
+                  {(formData.availability?.slots || []).map((slot: any, idx: any) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={slot.day}
+                        onChange={(e) => {
+                          const updated = [...formData.availability.slots]
+                          updated[idx] = { ...updated[idx], day: e.target.value }
+                          setFormData({
+                            ...formData,
+                            availability: { ...formData.availability, slots: updated },
+                          })
+                        }}
+                        className="flex-1 p-3 border rounded-lg"
+                        placeholder="Day"
+                      />
+
+                      <input
+                        type="text"
+                        value={slot.fromTime}
+                        onChange={(e) => {
+                          const updated = [...formData.availability.slots]
+                          updated[idx] = { ...updated[idx], fromTime: e.target.value }
+                          setFormData({
+                            ...formData,
+                            availability: { ...formData.availability, slots: updated },
+                          })
+                        }}
+                        className="w-28 p-3 border rounded-lg"
+                        placeholder="From"
+                      />
+
+                      <input
+                        type="text"
+                        value={slot.toTime}
+                        onChange={(e) => {
+                          const updated = [...formData.availability.slots]
+                          updated[idx] = { ...updated[idx], toTime: e.target.value }
+                          setFormData({
+                            ...formData,
+                            availability: { ...formData.availability, slots: updated },
+                          })
+                        }}
+                        className="w-28 p-3 border rounded-lg"
+                        placeholder="To"
+                      />
+
+                      <button
+                        onClick={() => {
+                          const updated = [...formData.availability.slots]
+                          updated.splice(idx, 1)
+                          setFormData({
+                            ...formData,
+                            availability: { ...formData.availability, slots: updated },
+                          })
+                        }}
+                        className="text-red-500 font-semibold"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ))}
+
                   <button
-                    onClick={() => setFormData({ ...formData, availability: [...(formData.availability || []), ''] })}
-                    className="text-sm text-amethyst font-semibold hover:opacity-80 transition"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        availability: {
+                          ...formData.availability,
+                          slots: [
+                            ...(formData.availability?.slots || []),
+                            { day: "", fromTime: "9:00 AM", toTime: "5:00 PM" },
+                          ],
+                        },
+                      })
+                    }
+                    className="text-sm text-amethyst font-semibold"
                   >
-                    + Add Time Slot
+                    + Add Day
                   </button>
                 </div>
+
               )}
             </div>
           </div>
@@ -386,7 +611,7 @@ export default function DoctorProfile() {
             <div className="bg-card border-purple-glow rounded-xl p-6 shadow-purple">
               <h3 className="text-lg font-bold text-foreground mb-4">Consultation Fee</h3>
               {!isEditing ? (
-                <p className="text-3xl font-bold text-green-500">${user.consultationFee || '99.99'}</p>
+                <p className="text-3xl font-bold text-green-500">${user.fee || '99.99'}</p>
               ) : (
                 <div>
                   <label className="text-xs text-muted-foreground block mb-2">Per Consultation</label>
@@ -395,8 +620,8 @@ export default function DoctorProfile() {
                     <input
                       type="number"
                       step="0.01"
-                      value={formData.consultationFee || ''}
-                      onChange={(e) => setFormData({ ...formData, consultationFee: e.target.value })}
+                      value={formData.fee || ''}
+                      onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
                       className="flex-1 p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-amethyst"
                       placeholder="99.99"
                     />
@@ -440,186 +665,3 @@ export default function DoctorProfile() {
     </main>
   )
 }
-
-//   return (
-//     <main className="max-w-6xl mx-auto px-4 py-8">
-//       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-//         {/* Sidebar */}
-//         <div className="md:col-span-1">
-//           <div className="bg-white/20 rounded-xl shadow p-6">
-//             <div className="flex justify-center mb-4">
-//               <div className="relative w-24 h-24">
-//                 <Image
-//                   src={`https://ui-avatars.com/api/?name=${user.name}&background=8B5CF6&color=fff`}
-//                   alt={user.name}
-//                   fill
-//                   className="rounded-full object-cover"
-//                 />
-//               </div>
-//             </div>
-//             <h2 className="text-2xl font-bold text-center mb-1">{user.name}</h2>
-//             <p className="text-zinc-300 text-center text-sm mb-4">Doctor</p>
-//             <div className=" pt-4 p-3 bg-french-violet rounded-lg text-sm backdrop-blur-md">
-//               <div className="text-sm">
-//                 <p className="text-zinc-300">Email</p>
-//                 <p className="font-semibold">{user.email}</p>
-//               </div>
-//             </div>
-//             <div className="mt-6 text-sm p-3 bg-french-violet rounded-lg text-sm ">
-//                 <p className="text-zinc-300">Bio</p>
-//                 <p className="font-semibold">{user.about}</p>
-//               </div>
-//           </div>
-//         </div>
-
-//         {/* Main Content */}
-//         <div className="md:col-span-2 space-y-6">
-//           {/* Inline edit form or view */}
-//           {!isEditing ? (
-//             <>
-//               {/* Professional Info (view) */}
-//               <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow p-6">
-//                 <div className="flex justify-between items-start mb-4">
-//                   <h3 className="text-xl font-bold">Professional Information</h3>
-//                   <button
-//                     onClick={() => setIsEditing(true)}
-//                     className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition text-sm font-semibold"
-//                   >
-//                     Edit Profile
-//                   </button>
-//                 </div>
-//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//                   <div>
-//                     <label className="text-sm text-zinc-100">Specialization</label>
-//                     <p className="font-semibold">{user.specialization || 'Cardiology'}</p>
-//                   </div>
-//                   <div>
-//                     <label className="text-sm text-zinc-100">License Number</label>
-//                     <p className="font-semibold">{user.licenseNumber || 'N/A'}</p>
-//                   </div>
-//                   <div>
-//                     <label className="text-sm text-zinc-100">Experience</label>
-//                     <p className="font-semibold">{user.experience || '10 years'}</p>
-//                   </div>
-//                   <div>
-//                     <label className="text-sm text-zinc-100">Rating</label>
-//                     <p className="font-semibold">⭐ {user.rating || '4.8'}</p>
-//                   </div>
-//                 </div>
-//               </div>
-
-//               {/* Availability (view) */}
-//               <div className="bg-russian-violet-2 rounded-xl shadow p-6">
-//                 <h3 className="text-xl font-bold mb-4">Availability</h3>
-//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-//                   {(user.availability || ['Mon 9-11 AM', 'Wed 2-4 PM', 'Fri 10-12 AM']).map((slot: string, idx: number) => (
-//                     <div key={idx} className="p-3 bg-mauve rounded-lg text-sm text-zinc-800">
-//                       {slot}
-//                     </div>
-//                   ))}
-//                 </div>
-//               </div>
-
-//               {/* Appointments */}
-//               <div className="bg-russian-violet-2 rounded-xl shadow p-6">
-//                 <h3 className="text-xl font-bold mb-4">Recent Appointments</h3>
-//                 <div className="text-center text-gray-600 py-8">
-//                   <p>No appointments yet</p>
-//                 </div>
-//               </div>
-//             </>
-//           ) : (
-//             /* Edit Mode */
-//             <div className="space-y-6">
-//               <div className="bg-white rounded-xl shadow p-6">
-//                 <h3 className="text-xl font-bold mb-4">Edit Profile</h3>
-//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//                   <div>
-//                     <label className="text-sm text-gray-600">Full Name</label>
-//                     <input
-//                       name="name"
-//                       value={formData.name || ''}
-//                       onChange={(e) => setFormData((p: any) => ({ ...p, name: e.target.value }))}
-//                       className="w-full p-3 border rounded-lg"
-//                     />
-//                   </div>
-//                   <div>
-//                     <label className="text-sm text-gray-600">Email (read-only)</label>
-//                     <input
-//                       name="email"
-//                       value={formData.email || ''}
-//                       disabled
-//                       className="w-full p-3 border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
-//                     />
-//                   </div>
-//                   <div>
-//                     <label className="text-sm text-gray-600">Specialization</label>
-//                     <input
-//                       name="specialization"
-//                       value={formData.specialization || ''}
-//                       onChange={(e) => setFormData((p: any) => ({ ...p, specialization: e.target.value }))}
-//                       className="w-full p-3 border rounded-lg"
-//                     />
-//                   </div>
-//                   <div>
-//                     <label className="text-sm text-gray-600">Experience</label>
-//                     <input
-//                       name="experience"
-//                       value={formData.experience || ''}
-//                       onChange={(e) => setFormData((p: any) => ({ ...p, experience: e.target.value }))}
-//                       className="w-full p-3 border rounded-lg"
-//                     />
-//                   </div>
-//                   <div className="sm:col-span-2">
-//                     <label className="text-sm text-gray-600">Bio</label>
-//                     <textarea
-//                       name="about"
-//                       value={formData.about || ''}
-//                       onChange={(e) => setFormData((p: any) => ({ ...p, about: e.target.value }))}
-//                       className="w-full p-3 border rounded-lg"
-//                       rows={4}
-//                     />
-//                   </div>
-//                   <div className="sm:col-span-2">
-//                     <label className="text-sm text-gray-600">Availability (comma separated)</label>
-//                     <input
-//                       name="availability"
-//                       value={(formData.availability && formData.availability.join) ? formData.availability.join(', ') : (formData.availability || '')}
-//                       onChange={(e) => setFormData((p: any) => ({ ...p, availability: e.target.value.split(',').map((s: string) => s.trim()) }))}
-//                       className="w-full p-3 border rounded-lg"
-//                     />
-//                   </div>
-//                 </div>
-
-//                 <div className="flex gap-4 mt-6">
-//                   <button
-//                     onClick={() => {
-//                       const updatedUser = { ...user, ...formData }
-//                       localStorage.setItem('user', JSON.stringify(updatedUser))
-//                       const users = JSON.parse(localStorage.getItem('users') || '[]')
-//                       const updatedUsers = users.map((u: any) => (u.email === user.email ? updatedUser : u))
-//                       localStorage.setItem('users', JSON.stringify(updatedUsers))
-//                       window.dispatchEvent(new Event('user-updated'))
-//                       setUser(updatedUser)
-//                       setIsEditing(false)
-//                       alert('Profile updated successfully!')
-//                     }}
-//                     className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
-//                   >
-//                     Save Changes
-//                   </button>
-//                   <button
-//                     onClick={() => { setFormData(user); setIsEditing(false) }}
-//                     className="px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition font-semibold"
-//                   >
-//                     Cancel
-//                   </button>
-//                 </div>
-//               </div>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     </main>
-//   )
-// }

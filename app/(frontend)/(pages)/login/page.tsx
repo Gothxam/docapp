@@ -1,5 +1,5 @@
 "use client"
-
+import api from "../../utils/axios"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -10,55 +10,87 @@ import { GiHospitalCross } from "react-icons/gi"
 export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm()
   const router = useRouter()
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
 
   const onSubmit = async (data: any) => {
+    
     setIsLoading(true)
     setError("")
 
     try {
-      const users = JSON.parse(localStorage.getItem("users") || "[]")
+      localStorage.clear()
+      const response  = await api.post('/auth/login',data)
+      console.log(response.data)
+      const { user, token } = response.data.data
 
-      const foundUser = users.find(
-        (u: any) => u.email === data.email && u.password === data.password
-      )
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
 
-      if (!foundUser) {
-        setError("Invalid email or password. Please try again.")
-        setIsLoading(false)
-        return
+      localStorage.setItem("token", token)
+      localStorage.setItem("user", JSON.stringify(user))
+      console.log("user",user)
+      console.log("tokeeeennnn",token)
+
+      window.dispatchEvent(new Event("user-updated"))
+
+      console.log("LOGIN FOUND USER IN:", user.role);
+      console.log("USER EMAIL:", user.email);
+
+    if (user.role === "doctor") {
+        router.push("/doctor-schedule")
+      } else if (user.role === "patient") {
+        router.push("/patient-dashboard")
+      } else if (user.role === "admin") {
+        router.push("/admin-dashboard")
       }
 
-      localStorage.setItem("user", JSON.stringify(foundUser))
-      window.dispatchEvent(new Event("user-updated"))
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      if (foundUser.userType === "doctor") {
-        router.push("/doctor-schedule")
-      } else {
-        router.push("/patient-dashboard")
-      }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+    } catch (err:any) {
+      setError(err.response?.data?.message || "Invalid email or password")
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    const currentUser = localStorage.getItem("user")
-    if (currentUser) {
-      const user = JSON.parse(currentUser)
-      if (user.userType === "doctor") {
-        router.push("/doctor-schedule")
-      } else {
-        router.push("/patient-dashboard")
-      }
+  const token = localStorage.getItem("token")
+  const user = localStorage.getItem("user")
+
+  if (token && user) {
+    const parsedUser = JSON.parse(user)
+
+    if (parsedUser.role === "doctor") {
+      router.push("/doctor-schedule")
+    } else {
+      router.push("/patient-dashboard")
     }
-  }, [router])
+  }
+}, [router])
+//   useEffect(() => {
+//   const token = localStorage.getItem("token")
+//   const user = localStorage.getItem("user")
+
+//   if (!token || !user) return
+
+//   const parsedUser = JSON.parse(user)
+
+//   if (parsedUser.role === "doctor") {
+//     router.push("/doctor-schedule")
+//   }
+
+//   if (parsedUser.role === "patient") {
+//     router.push("/patient-dashboard")
+//   }
+
+//   if (parsedUser.role === "admin") {
+//     router.push("/admin-dashboard")
+//   }
+// }, [router])
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
@@ -68,7 +100,7 @@ export default function LoginPage() {
             <GiHospitalCross className="w-8 h-8 text-primary" />
             <h1 className="text-3xl font-bold">MedApp</h1>
           </div>
-          <p className="text-muted-foreground">Welcome back to your healthcare platform</p>
+          <p className="text-muted-foreground">Welcome back to your healthcare platform</p> 
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-lg p-8">

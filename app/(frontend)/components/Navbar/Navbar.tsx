@@ -60,29 +60,66 @@ export default function Navbar() {
   }
 
   useEffect(() => {
-    const updateUser = () => {
-      const storedUser = localStorage.getItem("user")
-      setUser(storedUser ? JSON.parse(storedUser) : null)
+  const updateUser = () => {
+    const storedUser = localStorage.getItem("user")
+
+    if (!storedUser || storedUser === "undefined") {
+      setUser(null)
+      console.log("there is no user in storage ")
+      return
     }
 
-    updateUser()
-    window.addEventListener("storage", updateUser)
-    window.addEventListener("user-updated", updateUser)
-
-    return () => {
-      window.removeEventListener("storage", updateUser)
-      window.removeEventListener("user-updated", updateUser)
+    try {
+      setUser(JSON.parse(storedUser))
+    } catch {
+      localStorage.removeItem("user")
+      setUser(null)
     }
-  }, [])
+  }
+
+  updateUser()
+  window.addEventListener("user-updated", updateUser)
+  window.addEventListener("storage", updateUser)
+
+  return () => {
+    window.removeEventListener("user-updated", updateUser)
+    window.removeEventListener("storage", updateUser)
+  }
+}, [])
+
+
+  // useEffect(() => {
+  //   const updateUser = () => {
+  //     const storedUser = localStorage.getItem("user")
+  //     let parsedUser = null
+  //     try {
+  //       parsedUser = storedUser ? JSON.parse(storedUser) : null
+  //       console.log("parsduser",parsedUser)
+  //     } catch (err) {
+  //       console.error("Failed to parse stored user:", err)
+  //       localStorage.removeItem("user") // clean invalid data
+  //     }
+  //   }
+
+  //   updateUser()
+  //   window.addEventListener("storage", updateUser)
+  //   window.addEventListener("user-updated", updateUser)
+
+  //   return () => {
+  //     window.removeEventListener("storage", updateUser)
+  //     window.removeEventListener("user-updated", updateUser)
+  //   }
+  // }, [])
 
   const handleLogout = () => {
     localStorage.removeItem("user")
-    setUser(null)
-    window.dispatchEvent(new Event("user-updated"))
-    router.push("/login")
+  localStorage.removeItem("token")
+  setUser(null)
+  window.dispatchEvent(new Event("user-updated"))
+  router.push("/login")
   }
 
-  const isDoctor = user?.userType === "doctor"
+  const isDoctor = user?.role === "doctor"
   const dashboardLink = isDoctor ? "/doctor-dashboard" : "/patient-dashboard"
 
   return (

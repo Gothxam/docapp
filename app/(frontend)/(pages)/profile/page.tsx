@@ -16,13 +16,13 @@ export default function ProfileRedirect() {
 
     const user = JSON.parse(storedUser)
     console.log('User data:', user)
-    console.log('User type:', user.userType)
+    console.log('User type:', user.role)
     
     // Route based on user type
-    if (user.userType === 'doctor') {
+    if (user.role === 'doctor') {
       console.log('Routing to doctor profile')
       router.push('/profile/doctor')
-    } else if (user.userType === 'patient') {
+    } else if (user.role === 'patient') {
       console.log('Routing to patient profile')
       router.push('/profile/patient')
     } else {

@@ -4,63 +4,118 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Calendar, Clock, User, MapPin } from "lucide-react"
+import api from "../../utils/axios"
 
 export default function MyAppointmentsPage() {
   const [user, setUser] = useState<any>(null)
   const [appointments, setAppointments] = useState<any[]>([])
   const router = useRouter()
 
+  // Fetch appointments from backend
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (!storedUser) {
-      router.push("/login")
-      return
-    }
+    const fetchAppointments = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        router.push("/login")
+        return
+      }
 
-    const parsedUser = JSON.parse(storedUser)
-    setUser(parsedUser)
-    // Get appointments for this patient
-    const storedAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
-    const patientAppointments = storedAppointments.filter((appt: any) => appt.patientEmail === parsedUser.email)
-    setAppointments(patientAppointments)
-  }, [router])
+      try {
+        const res = await api.get("/appointments", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        console.log(res)
+        const activeAppointments = res.data.filter(
+          (appt: any) => appt.status !== "cancelled"||"completed"
+        );
 
-  // Listen for appointment updates from other windows/tabs
-  useEffect(() => {
-    const handleAppointmentsUpdated = () => {
-      const storedUser = localStorage.getItem("user")
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser)
-        const storedAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
-        const patientAppointments = storedAppointments.filter((appt: any) => appt.patientEmail === parsedUser.email)
-        setAppointments(patientAppointments)
+        setAppointments(activeAppointments);// backend returns populated appointments with doctor info
+      } catch (err) {
+        console.error(err)
+        alert("Failed to fetch appointments.")
       }
     }
 
-    window.addEventListener('appointments-updated', handleAppointmentsUpdated)
-    return () => window.removeEventListener('appointments-updated', handleAppointmentsUpdated)
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+
+    fetchAppointments()
+  }, [router])
+
+  // Listen for appointment updates from other tabs/windows
+  useEffect(() => {
+    const handleAppointmentsUpdated = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      try {
+        const res = await api.get("/appointments", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const activeAppointments = res.data.filter(
+          (appt: any) => appt.status !== "cancelled"
+        );
+
+        setAppointments(activeAppointments);
+      } catch (err) {
+        console.error("Failed to fetch updated appointments:", err)
+      }
+    }
+
+    window.addEventListener("appointments-updated", handleAppointmentsUpdated)
+    return () => window.removeEventListener("appointments-updated", handleAppointmentsUpdated)
   }, [])
 
-  const handleCancelAppointment = (index: number) => {
-    const updatedAppointments = appointments.filter((_, i) => i !== index)
-    setAppointments(updatedAppointments)
-    localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
-    window.dispatchEvent(new Event('appointments-updated'))
-    alert("Appointment cancelled")
+  // Cancel appointment
+  const handleCancelAppointment = async (id: string) => {
+  const confirmCancel = confirm("Are you sure you want to cancel this appointment?");
+  if (!confirmCancel) return;
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    router.push("/login");
+    return;
   }
 
+  try {
+    await api.patch(
+      `/appointments/${id}/status`,
+      { status: "cancelled" },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+
+    // Update local state
+    setAppointments(prev => prev.filter(appt => appt._id !== id));
+
+
+    alert("Appointment cancelled successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to cancel appointment. Please try again.");
+  }
+};
+
+
+  // Status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Confirmed":
+      case "approved":
         return "bg-green-100 text-green-800"
-      case "Completed":
+      case "completed":
         return "bg-blue-100 text-blue-800"
-      case "Cancelled":
+      case "rejected":
         return "bg-red-100 text-red-800"
+      case "cancelled":
+        return "bg-orange-100 text-orange-800"
       default:
         return "bg-yellow-100 text-yellow-800"
     }
   }
+
+
 
   if (!user) {
     return <div className="p-6 text-center text-lg">Loading...</div>
@@ -93,7 +148,7 @@ export default function MyAppointmentsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <User className="w-5 h-5 text-primary" />
-                    <h3 className="text-xl font-semibold">{appt.doctorName || "Doctor"}</h3>
+                    <h3 className="text-xl font-semibold">{appt.doctor?.name || "Doctor"}</h3>
                   </div>
 
                   <div className="space-y-2 text-sm">
@@ -104,11 +159,11 @@ export default function MyAppointmentsPage() {
                     )}
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="w-4 h-4" />
-                      {new Date(appt.date).toLocaleDateString()}
+                       {new Date(appt.appointmentDate).toLocaleDateString()}
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="w-4 h-4" />
-                      {new Date(appt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       {new Date(appt.appointmentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                     {appt.notes && (
                       <p className="text-muted-foreground">
@@ -119,14 +174,15 @@ export default function MyAppointmentsPage() {
 
                   <div className="mt-4">
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(appt.status || "Pending")}`}>
-                      {appt.status || "Pending"}
+                      {appt.status}
                     </span>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => handleCancelAppointment(idx)}
+                  onClick={() => handleCancelAppointment(appt._id)}
                   className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-medium flex-shrink-0"
+                  disabled={appt.status !== "pending" && appt.status !== "approved"}
                 >
                   Cancel
                 </button>

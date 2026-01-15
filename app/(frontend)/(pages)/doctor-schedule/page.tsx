@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Calendar, Clock, User, Phone, AlertCircle, ArrowRight } from "lucide-react"
+import api from "../../utils/axios"
 
 export default function DoctorSchedule() {
   const [user,setUser]=useState<any>(null)
@@ -12,48 +13,91 @@ export default function DoctorSchedule() {
   const [selectedFilter, setSelectedFilter] = useState("all")
   const router = useRouter()
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (!storedUser) {
-      router.push("/login")
-      return
-    }
+  const normalizeAppointments = (list: any[]) => {
+  return list.map((a) => ({
+    id: a._id,
+    status: (a.status || "").toLowerCase(),
+    appointmentDate: a.appointmentDate,
+    reason: a.reason,
+    notes: a.notes,
 
-    const parsedUser = JSON.parse(storedUser)
-    if (parsedUser.userType !== "doctor") {
-      router.push("/patient-dashboard")
-      return
-    }
+    patient: typeof a.patient === "object" ? a.patient : null,
 
-    setUser(parsedUser)
+    // 🔥 FIX HERE
+    doctorId:
+      typeof a.doctor === "string"
+        ? a.doctor
+        : a.doctor?._id?.toString(),
+  }))
+}
 
-    // Get all appointments for this doctor
-    const storedAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
-    const doctorAppointments = storedAppointments.filter((appt: any) => appt.doctorName === parsedUser.name)
-    setAppointments(doctorAppointments)
-    setFilteredAppointments(doctorAppointments)
+ useEffect(() => {
+    const fetchAppointments = async () => {
+  const token = localStorage.getItem("token")
+  if (!token) {
+    router.push("/login")
+    return
+  }
+
+      const profile = await api.get('/doctor/profile')
+      const doctor = profile.data?.data ?? profile.data
+  setUser(doctor)
+
+  const res = await api.get("/appointments", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  console.log(res)
+  
+
+  const rawList = res.data?.data ?? res.data
+  const normalized = normalizeAppointments(rawList)
+
+  const doctorAppointments = normalized.filter(
+    (a) => a.doctorId === doctor._id
+  )
+ 
+
+  console.log("dapp",doctorAppointments)
+  setAppointments(doctorAppointments)
+  setFilteredAppointments(doctorAppointments)
+
+  // setStats({
+  //   total: doctorAppointments.length,
+  //   pending: doctorAppointments.filter(a => a.status === "pending").length,
+  //   confirmed: doctorAppointments.filter(a => a.status === "approved").length,
+  //   completed: doctorAppointments.filter(a => a.status === "completed").length,
+  // })
+}
+
+
+    fetchAppointments()
   }, [router])
 
   useEffect(() => {
     let filtered = appointments
     if (selectedFilter === "pending") {
-      filtered = appointments.filter((a) => a.status === "Pending")
+      filtered = appointments.filter((a) => a.status === "pending")
     } else if (selectedFilter === "confirmed") {
-      filtered = appointments.filter((a) => a.status === "Confirmed")
+      filtered = appointments.filter((a) => a.status === "confirmed")
     } else if (selectedFilter === "completed") {
-      filtered = appointments.filter((a) => a.status === "Completed")
+      filtered = appointments.filter((a) => a.status === "completed")
+    }
+    else if(selectedFilter==="rejected"){
+      filtered=appointments.filter((a)=>a.status==="rejected")
     }
     setFilteredAppointments(filtered)
   }, [selectedFilter, appointments])
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Pending":
+      case "pending":
         return "bg-yellow-500/20 text-yellow-600 border-yellow-500/30 dark:text-yellow-400"
-      case "Confirmed":
+      case "confirmed":
         return "bg-green-500/20 text-green-600 border-green-500/30 dark:text-green-400"
-      case "Completed":
+      case "completed":
         return "bg-amethyst/20 text-amethyst border-amethyst/30 dark:text-amethyst/80"
+      case "rejected":
+        return "bg-red-500/20 text-red-600 border-red-300/30 dark:text-red-400"
       default:
         return "bg-muted text-muted-foreground border-border"
     }
@@ -79,26 +123,26 @@ export default function DoctorSchedule() {
           <div className="bg-card border-purple-glow rounded-xl p-6 shadow-purple">
             <p className="text-sm text-muted-foreground mb-2">Pending</p>
             <p className="text-3xl font-bold text-yellow-600">
-              {appointments.filter((a) => a.status === "Pending").length}
+              {appointments.filter((a) => a.status === "pending").length}
             </p>
           </div>
           <div className="bg-card border-purple-glow rounded-xl p-6 shadow-purple">
             <p className="text-sm text-muted-foreground mb-2">Confirmed</p>
             <p className="text-3xl font-bold text-green-600">
-              {appointments.filter((a) => a.status === "Confirmed").length}
+              {appointments.filter((a) => a.status === "confirmed").length}
             </p>
           </div>
           <div className="bg-card border-purple-glow rounded-xl p-6 shadow-purple">
             <p className="text-sm text-muted-foreground mb-2">Completed</p>
             <p className="text-3xl font-bold text-blue-600">
-              {appointments.filter((a) => a.status === "Completed").length}
+              {appointments.filter((a) => a.status === "completed").length}
             </p>
           </div>
         </div>
 
         {/* Filter Buttons */}
         <div className="flex flex-wrap gap-3 mb-8">
-          {["all", "pending", "confirmed", "completed"].map((filter) => (
+          {["all", "pending", "confirmed", "completed","rejected"].map((filter) => (
             <button
               key={filter}
               onClick={() => setSelectedFilter(filter)}

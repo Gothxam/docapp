@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "./(frontend)/components/App-sidebar/app-sidebar";
 import LayoutWrapper from "./(frontend)/components/LayoutWrapper/LayoutWrapper";
 import { Analytics } from '@vercel/analytics/next';
+import { Toaster } from "react-hot-toast"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+         <Toaster position="top-right" reverseOrder={false} />
          <ThemeProvider
             attribute="class"
             defaultTheme="system"

@@ -25,7 +25,7 @@ export default function DoctorProfileSettings() {
     }
 
     const parsedUser = JSON.parse(storedUser)
-    if (parsedUser.userType !== 'doctor') {
+    if (parsedUser.role !== 'doctor') {
       router.push('/patient-dashboard')
       return
     }

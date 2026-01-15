@@ -2,13 +2,20 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // Allow external avatars from ui-avatars.com
     remotePatterns: [
+      // ui-avatars fallback
       {
         protocol: "https",
         hostname: "ui-avatars.com",
-        port: "",
         pathname: "/**",
+      },
+
+      // backend uploaded images
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "5678",
+        pathname: "/uploads/**",
       },
     ],
   },

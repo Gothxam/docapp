@@ -4,21 +4,48 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import api from "../../utils/axios"
+import { useSearchParams } from "next/navigation"
+
 
 export default function BookAppointmentPage() {
   const [user, setUser] = useState<any>(null)
   const [doctors, setDoctors] = useState<any[]>([])
+  const searchParams = useSearchParams()
+
+  const doctorIdFromUrl = searchParams.get("doctorId")
   const [formData, setFormData] = useState({
     doctorId: "",
-    doctorName: "",
     date: "",
     reason: "",
     notes: "",
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const router = useRouter()
 
+  const router = useRouter()
+  useEffect(() => {
+    if (doctorIdFromUrl) {
+      setFormData(prev => ({
+        ...prev,
+        doctorId: doctorIdFromUrl,
+      }))
+    }
+  }, [doctorIdFromUrl])
+
+  useEffect(() => {
+    const getDoctors = async () => {
+      try {
+        const res = await api('/doctor');
+        const data = await res.data;
+        console.log(data)
+        setDoctors(data);
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    getDoctors()
+  }, [])
   useEffect(() => {
     const storedUser = localStorage.getItem("user")
     if (!storedUser) {
@@ -27,84 +54,87 @@ export default function BookAppointmentPage() {
     }
 
     const parsedUser = JSON.parse(storedUser)
-    
+
     // Only patients can book appointments
-    if (parsedUser.userType !== "patient") {
+    if (parsedUser.role !== "patient") {
       router.push("/doctor-dashboard")
       return
     }
-    
+
     setUser(parsedUser)
 
     // Get all doctors
-    const allUsers = JSON.parse(localStorage.getItem("users") || "[]")
-    const doctorsList = allUsers.filter((u: any) => u.userType === "doctor")
-    setDoctors(doctorsList)
+
   }, [router])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
-    }))
+      [name]: value,
+    }));
+  };
 
-    // Update doctorName when doctorId changes
-    if (name === "doctorId") {
-      const selectedDoctor = doctors.find(d => d.id === value || d.name === value)
-      if (selectedDoctor) {
-        setFormData(prev => ({
-          ...prev,
-          doctorName: selectedDoctor.name
-        }))
-      }
-    }
-  }
+
+  // If doctorId changes, also update doctorName for display
+  //   if (name === 'doctorId') {
+  //     const selectedDoctor = doctors.find(d => d.id === value);
+  //     if (selectedDoctor) {
+  //       setFormData(prev => ({
+  //         ...prev,
+  //         doctorName: selectedDoctor.name
+  //       }));
+  //     }
+  //   }
+  // };
+  const selectedDoctor = doctors.find(
+    d => d._id === formData.doctorId
+  );
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-
-    if (!formData.doctorName || !formData.date || !formData.reason) {
-      setError("Please fill in all required fields")
-      return
-    }
-
     setLoading(true)
+    const payload = {
+      doctorId: formData.doctorId, // THIS is mandatory
+      appointmentDate: formData.date,
+      reason: formData.reason,
+      notes: formData.notes,
+    };
 
     try {
-      // Get existing appointments
-      const existingAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
+      const token = localStorage.getItem("token") // JWT you got on login
 
-      // Create new appointment
-      const newAppointment = {
-        id: Date.now().toString(),
-        patientEmail: user.email,
-        patientName: user.name,
-        doctorName: formData.doctorName,
-        date: formData.date,
-        reason: formData.reason,
-        notes: formData.notes,
-        status: "Pending",
-        createdAt: new Date().toISOString(),
+
+      const res = await api.post('/appointments', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!res) {
+        throw new Error("Failed to book appointment")
       }
-
-      // Add to appointments
-      const updatedAppointments = [...existingAppointments, newAppointment]
-      localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
-
-      // Trigger update event
-      window.dispatchEvent(new Event('appointments-updated'))
 
       alert("Appointment booked successfully!")
       router.push("/my-appointments")
+
     } catch (err) {
+      console.log(err)
+      console.log('Payload:', payload)
+
       setError("Failed to book appointment. Please try again.")
-      console.error(err)
     } finally {
       setLoading(false)
     }
   }
+
 
   if (!user) {
     return <div className="p-6 text-center text-lg">Loading...</div>
@@ -131,28 +161,31 @@ export default function BookAppointmentPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Doctor Selection */}
           <div>
-            <label htmlFor="doctorName" className="block text-sm font-semibold mb-2">
+
+            <label htmlFor="doctorId" className="block text-sm font-semibold mb-2">
               Select Doctor <span className="text-red-500">*</span>
             </label>
             <select
-              id="doctorName"
-              name="doctorName"
-              value={formData.doctorName}
+              id="doctorId"
+              name="doctorId"
+              value={formData.doctorId}
               onChange={handleInputChange}
               required
+              disabled={!!doctorIdFromUrl} // OPTIONAL: lock doctor if redirected
               className="w-full px-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">Choose a doctor</option>
-              {doctors.length > 0 ? (
-                doctors.map((doctor) => (
-                  <option key={doctor.id || doctor.name} value={doctor.name}>
-                    {doctor.name} {doctor.specialization && `(${doctor.specialization})`}
-                  </option>
-                ))
-              ) : (
-                <option disabled>No doctors available</option>
-              )}
+              {doctors.map(doctor => (
+                <option key={doctor._id} value={doctor._id}>
+                  {doctor.name} {doctor.specialization && `(${doctor.specialization})`}
+                </option>
+              ))}
             </select>
+            {selectedDoctor && (
+              <div className="text-sm text-green-600 ">
+                Booking appointment with <strong>{selectedDoctor.name}</strong>
+              </div>
+            )}
           </div>
 
           {/* Date Selection */}

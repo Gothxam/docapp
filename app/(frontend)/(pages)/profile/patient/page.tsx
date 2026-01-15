@@ -5,6 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Mail, Phone, MapPin, Calendar, Droplet, AlertCircle, User, Edit2, X, Check, Upload, Calendar as CalendarIcon, Heart, Activity, Clock, Plus, ChevronDown, ChevronRight } from 'lucide-react'
+import api from '@/app/(frontend)/utils/axios'
+import { normalize } from 'path'
+import { profile } from 'console'
 
 export default function PatientProfile() {
   const [user, setUser] = useState<any>(null)
@@ -12,23 +15,73 @@ export default function PatientProfile() {
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<any>({})
   const [saveSuccess, setSaveSuccess] = useState(false)
-  const [profileImage, setProfileImage] = useState<string | null>(null)
-  const router = useRouter()
+  const [profilePicture, setProfilePicture] = useState<string | null>(null)
+    const [selectedImage, setSelectedImage] = useState<File | null>(null)
+ const [appointments, setAppointments] = useState<any[]>([])
+   const router = useRouter()
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-    if (!storedUser) {
+  
+   useEffect(() => {
+    const token = localStorage.getItem('token') // ensure token is defined
+
+    if (!token) {
       router.push('/login')
       return
     }
 
-    const userData = JSON.parse(storedUser)
-    setUser(userData)
-    setFormData(userData)
-    setProfileImage(userData.profileImage || null)
-    setLoading(false)
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get('/patient/profile')
+        console.log("data", res)
+        const profile = res.data?.data ?? res.data
+        setUser(profile)
+        setFormData(profile)
+        const normalize = (p?: string) => {
+  if (!p) return null
+  if (p.startsWith('http')) return p
+
+  return `http://localhost:5678/uploads/patients/${p}`
+}
+setProfilePicture(normalize(profile.profilePicture))     
+      } catch (error) {
+        console.error('Profile fetch failed', error)
+        router.push('/login')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
   }, [router])
 
+  // Fetch appointments from backend
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        router.push("/login")
+        return
+      }
+
+      try {
+        const res = await api.get("/appointments", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setAppointments(res.data);// backend returns populated appointments with doctor info
+      } catch (err) {
+        console.error(err)
+        alert("Failed to fetch appointments.")
+      }
+    }
+
+    // const storedUser = localStorage.getItem("user")
+    // if (storedUser)  {
+    //   setUser(JSON.parse(storedUser))
+    // }
+
+    fetchAppointments()
+  }, [router])
+  
   if (loading) return (
     <div className="flex items-center justify-center h-96">
       <p className="text-muted-foreground">Loading profile...</p>
@@ -48,15 +101,9 @@ export default function PatientProfile() {
     )
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev: any) => ({
-      ...prev,
-      [name]: value
-    }))
-  }
 
-  const validateForm = () => {
+
+const validateForm = () => {
     const errors: string[] = []
 
     // Name validation
@@ -64,73 +111,134 @@ export default function PatientProfile() {
       errors.push('Full name is required')
     }
 
-    // Phone validation (basic format check)
-    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
+    // helper to strip formatting
+    const clean = (num?: string) => (num ? num.replace(/[\s\-\(\)]/g, '') : '')
+
+    // Phone validation (basic format check) - use phoneNumber field
+    if (formData.phoneNumber && !/^[\+]?[1-9][\d]{0,15}$/.test(clean(formData.phoneNumber))) {
       errors.push('Please enter a valid phone number')
     }
 
     // Emergency contact phone validation
-    if (formData.emergencyPhone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.emergencyPhone.replace(/[\s\-\(\)]/g, ''))) {
+    if (formData.emergencyPhone && !/^[\+]?[1-9][\d]{0,15}$/.test(clean(formData.emergencyPhone))) {
       errors.push('Please enter a valid emergency contact phone number')
     }
 
     // Blood type validation
-    if (formData.bloodType && !['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].includes(formData.bloodType.toUpperCase())) {
+    if (formData.bloodType && !['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].includes(String(formData.bloodType).toUpperCase())) {
       errors.push('Please enter a valid blood type (A+, A-, B+, B-, AB+, AB-, O+, O-)')
+    }
+
+    // Date of birth basic check
+    if (formData.dateOfBirth) {
+      const dob = new Date(formData.dateOfBirth)
+      if (isNaN(dob.getTime())) {
+        errors.push('Please enter a valid date of birth')
+      } else if (dob > new Date()) {
+        errors.push('Date of birth cannot be in the future')
+      }
     }
 
     return errors
   }
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-  const handleSave = () => {
+    const previewUrl = URL.createObjectURL(file)
+    setProfilePicture(previewUrl)
+    setSelectedImage(file) // store file for later upload
+  }
+
+  const handleUploadImage = async () => {
+    if (!selectedImage) return; // ❌ skip if null
+
+    const formData = new FormData();
+    formData.append('file', selectedImage);
+
+    await api.post('/patient/upload-profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data', // important
+      },
+    });
+  };
+  
+ const handleSave = async () => {
     const validationErrors = validateForm()
-
     if (validationErrors.length > 0) {
-      alert('Please fix the following errors:\n' + validationErrors.join('\n'))
+      alert(validationErrors.join('\n'))
       return
     }
+    // 1️⃣ Upload image if changed
+      if (selectedImage) {
+        await handleUploadImage();
+      }
+    const payload = {
+  name: formData.name,
+  dateOfBirth: formData.dateOfBirth,
+  phoneNumber: formData.phoneNumber,
+  bloodType: formData.bloodType,
+  address: formData.address,
+  medicalHistory: formData.medicalHistory,
+  allergy: formData.allergy,
+  healthIssues: formData.healthIssues,
+  healthHistory: formData.healthHistory,
+  emergencyContact: formData.emergencyContact,
+  emergencyPhone: formData.emergencyPhone,
+  emergencyRelation: formData.emergencyRelation,
+  pastConditions: formData.pastConditions,
+  medications: formData.medications,
+  surgeries: formData.surgeries,
+}
 
-    // Normalize blood type to uppercase
-    const normalizedData = {
-      ...formData,
-      bloodType: formData.bloodType?.toUpperCase()
+
+    try {
+      const res = await api.patch('/patient/profile', payload)
+
+      const updated = res.data?.data ?? res.data
+      console.log("updated ",updated)
+      setUser(updated)
+      setFormData(updated)
+      setIsEditing(false)
+      setSaveSuccess(true)
+     const normalize = (p?: string) => {
+      if (!p) return null
+      if (p.startsWith('http')) return p
+
+      return `http://localhost:5678/uploads/patients/${p}`
     }
-
-    localStorage.setItem('user', JSON.stringify(normalizedData))
-    const users = JSON.parse(localStorage.getItem('users') || '[]')
-    const updatedUsers = users.map((u: any) =>
-      u.email === user.email ? { ...u, ...normalizedData } : u
-    )
-    localStorage.setItem('users', JSON.stringify(updatedUsers))
-
-    setUser(normalizedData)
-    setIsEditing(false)
-    setSaveSuccess(true)
-    setTimeout(() => setSaveSuccess(false), 3000)
+setProfilePicture(normalize(updated.profilePicture))     
+      window.dispatchEvent(new Event('user-updated'))
+      setSelectedImage(null)
+      setTimeout(() => setSaveSuccess(false), 3000)
+    } catch (error) {
+      console.error('Update failed', error)
+      alert('Failed to update profile')
+    }
   }
+
 
   const handleCancel = () => {
     setFormData(user)
     setIsEditing(false)
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64String = reader.result as string
-        setProfileImage(base64String)
-        setFormData({ ...formData, profileImage: base64String })
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+  
+  
+  const totalAppointments = appointments.length
+  const upcomingAppointments = appointments.filter(
+    appt =>
+      ["pending", "approved"].includes(appt.status) &&
+      new Date(appt.appointmentDate) > new Date()
+  ).length
 
+  const completedAppointments = appointments.filter(
+    appt => appt.status === "COMPLETED"
+  ).length
   const stats = [
-    { icon: CalendarIcon, label: 'Total Appointments', value: '12', color: 'text-blue-500' },
-    { icon: Clock, label: 'Upcoming', value: '3', color: 'text-green-500' },
-    { icon: Activity, label: 'Completed', value: '9', color: 'text-purple-500' },
+    { icon: CalendarIcon, label: 'Total Appointments', value: totalAppointments, color: 'text-blue-500' },
+    { icon: Clock, label: 'Upcoming', value: upcomingAppointments, color: 'text-green-500' },
+    { icon: Activity, label: 'Completed', value: completedAppointments, color: 'text-purple-500' },
     { icon: Heart, label: 'Health Score', value: '85%', color: 'text-red-500' },
   ]
 
@@ -154,11 +262,13 @@ export default function PatientProfile() {
                   <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amethyst to-french-violet p-1 shadow-purple">
                     <div className="w-full h-full rounded-full overflow-hidden bg-card">
                       <Image
-                        src={profileImage || `https://ui-avatars.com/api/?name=${isEditing ? formData.name : user.name}&background=9d4edd&color=fff&bold=true`}
+                        src={profilePicture || `https://ui-avatars.com/api/?name=${isEditing ? formData.name : user.name}&background=9d4edd&color=fff&bold=true`}
                         alt={isEditing ? formData.name : user.name}
                         width={128}
                         height={128}
                         className="w-full h-full object-cover"
+                        unoptimized
+                        loading="eager"
                       />
                     </div>
                   </div>
@@ -211,7 +321,7 @@ export default function PatientProfile() {
                       </div>
                       <div className="flex items-center gap-3">
                         <Phone className="w-4 h-4 text-amethyst flex-shrink-0" />
-                        <p className="text-sm text-foreground">{user.phone || '+1 (555) 000-0000'}</p>
+                        <p className="text-sm text-foreground">{user.phoneNumber || '+1 (555) 000-0000'}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <MapPin className="w-4 h-4 text-amethyst flex-shrink-0" />
@@ -235,8 +345,8 @@ export default function PatientProfile() {
                         <label className="block text-sm font-medium text-foreground mb-2">Phone Number</label>
                         <input
                           type="tel"
-                          value={formData.phone || ''}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          value={formData.phoneNumber || ''}
+                          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                           className="w-full p-3 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-amethyst"
                           placeholder="+1 (555) 123-4567"
                         />
@@ -268,11 +378,11 @@ export default function PatientProfile() {
                       </div>
                       <div className="flex items-center gap-3">
                         <Calendar className="w-4 h-4 text-amethyst flex-shrink-0" />
-                        <p className="text-sm text-foreground">{user.dob || 'Jan 1, 1990'}</p>
+                        <p className="text-sm text-foreground">{user.dateOfBirth || 'Jan 1, 1990'}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <AlertCircle className="w-4 h-4 text-amethyst flex-shrink-0" />
-                        <p className="text-sm text-foreground">{user.allergies || 'None'}</p>
+                        <p className="text-sm text-foreground">{user.allergy || 'None'}</p>
                       </div>
                     </div>
                   ) : (
@@ -291,8 +401,8 @@ export default function PatientProfile() {
                         <label className="text-xs text-muted-foreground">Date of Birth</label>
                         <input
                           type="date"
-                          value={formData.dob || ''}
-                          onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                          value={formData.dateOfBirth || ''}
+                          onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                           className="w-full p-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-amethyst"
                         />
                       </div>
@@ -300,8 +410,8 @@ export default function PatientProfile() {
                         <label className="text-xs text-muted-foreground">Allergies</label>
                         <input
                           type="text"
-                          value={formData.allergies || ''}
-                          onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
+                          value={formData.allergy || ''}
+                          onChange={(e) => setFormData({ ...formData, allergy: e.target.value })}
                           className="w-full p-2 border border-border rounded-lg bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-amethyst"
                           placeholder="Penicillin, Peanuts"
                         />
