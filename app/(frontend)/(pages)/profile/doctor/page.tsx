@@ -47,7 +47,7 @@ export default function DoctorProfile() {
       if (!p) return null
       if (p.startsWith('http')) return p
 
-      return `${process.env.NEXT_API_URL}ds/doctors/${p}`}
+      return `${process.env.NEXT_PUBLIC_API_URL}ds/doctors/${p}`}
         setProfilePicture(normalize(res.data.profilePicture) )
       } catch (err: any) {
         if (err.response?.status === 401) {
@@ -209,7 +209,7 @@ export default function DoctorProfile() {
         if (!p) return null
         if (p.startsWith('http')) return p
 
-        return `${process.env.NEXT_API_URL}/uploads/doctors/${p}`}
+        return `${process.env.NEXT_PUBLIC_API_URL}/uploads/doctors/${p}`}
       setProfilePicture(normalize(refreshed.data.profilePicture));
       // notify other parts of the app (doctor list, navbar, etc.) to refresh
       window.dispatchEvent(new Event('user-updated'))
