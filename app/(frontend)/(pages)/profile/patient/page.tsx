@@ -9,6 +9,11 @@ import api from '@/app/(frontend)/utils/axios'
 import { normalize } from 'path'
 import { profile } from 'console'
 
+const buildProfileImageUrl = (p?: string | null) => {
+  if (!p) return null
+  if (p.startsWith('http')) return p
+  return `${process.env.NEXT_PUBLIC_API_URL}/uploads/patients/${p}`
+}
 export default function PatientProfile() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -40,7 +45,7 @@ export default function PatientProfile() {
   if (!p) return null
   if (p.startsWith('http')) return p
 
-  return `${process.env.NEXT_API_URL}/uploads/patients/${p}`
+  return `${process.env.NEXT_PUBLIC_API_URL}/uploads/patients/${p}`
 }
 setProfilePicture(normalize(profile.profilePicture))     
       } catch (error) {
@@ -205,7 +210,7 @@ const validateForm = () => {
       if (!p) return null
       if (p.startsWith('http')) return p
 
-      return `${process.env.NEXT_API_URL}/uploads/patients/${p}`
+      return `${process.env.NEXT_PUBLIC_API_URL}/uploads/patients/${p}`
     }
 setProfilePicture(normalize(updated.profilePicture))     
       window.dispatchEvent(new Event('user-updated'))
