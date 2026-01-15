@@ -29,7 +29,7 @@ export default function DoctorsPage() {
         const users = res.data?.data ?? res.data
 
         const resolveImage = (profilePicture: any, name: string) => {
-          const apiBase = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
+          const apiBase = (process.env.NEXT_API_URL || '').replace(/\/$/, '')
           if (!profilePicture) return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`
           const p = String(profilePicture)
           if (p.startsWith('http')) return p
