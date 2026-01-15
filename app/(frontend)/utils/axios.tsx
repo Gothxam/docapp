@@ -1,7 +1,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: process.env.NEXT_API_URL,
+  baseURL: process.env.NEXT_API_URL
+  ||
+    "https://docapp-backend-wcuv.onrender.com",
 })
 
 api.interceptors.request.use((config) => {
