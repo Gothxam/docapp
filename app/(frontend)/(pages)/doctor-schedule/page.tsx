@@ -23,7 +23,6 @@ export default function DoctorSchedule() {
 
     patient: typeof a.patient === "object" ? a.patient : null,
 
-    // 🔥 FIX HERE
     doctorId:
       typeof a.doctor === "string"
         ? a.doctor
@@ -98,6 +97,10 @@ export default function DoctorSchedule() {
         return "bg-amethyst/20 text-amethyst border-amethyst/30 dark:text-amethyst/80"
       case "rejected":
         return "bg-red-500/20 text-red-600 border-red-300/30 dark:text-red-400"
+      case "approved":
+        return  "bg-green-500/20 text-green-600 border-green-500/30 dark:text-green-400"
+      case "cancelled":
+        return  "bg-red-500/20 text-red-600 border-red-300/30 dark:text-red-400"
       default:
         return "bg-muted text-muted-foreground border-border"
     }
@@ -171,7 +174,7 @@ export default function DoctorSchedule() {
                     <p className="text-xs text-muted-foreground mb-1">Patient</p>
                     <p className="font-bold text-foreground flex items-center gap-2">
                       <User className="w-4 h-4 text-amethyst" />
-                      {appt.patientName}
+                      {appt.patient.name}
                     </p>
                   </div>
 
@@ -180,11 +183,11 @@ export default function DoctorSchedule() {
                     <p className="text-xs text-muted-foreground mb-1">Date & Time</p>
                     <p className="font-semibold text-foreground flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-amethyst" />
-                      {appt.date}
+                     {new Date(appt.appointmentDate).toLocaleDateString()}
                     </p>
                     <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                       <Clock className="w-4 h-4" />
-                      {appt.time}
+                     {new Date(appt.appointmentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
 
@@ -193,7 +196,7 @@ export default function DoctorSchedule() {
                     <p className="text-xs text-muted-foreground mb-1">Contact</p>
                     <p className="font-semibold text-foreground flex items-center gap-2">
                       <Phone className="w-4 h-4 text-amethyst" />
-                      {appt.phoneNumber}
+                      {appt.patient.phoneNumber}
                     </p>
                   </div>
 

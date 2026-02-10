@@ -11,13 +11,17 @@ import { useRouter } from 'next/navigation'
 // import { mockDoctors } from '@/app/(frontend)/data/mockDoctors'
 
 type Review = {
-  id: string
-  patientName: string
-  email: string
+  _id: string
   rating: number
-  comment: string
-  date: string
+  comment?: string
+  createdAt: string
+  patient?: {
+    _id: string
+    name: string
+    email: string
+  }
 }
+
 
 export default function DoctorDetail() {
   const { id } = useParams()
@@ -32,13 +36,29 @@ export default function DoctorDetail() {
   const router = useRouter()
 
   useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+    } catch (err) {
+      console.error("Failed to fetch user", err)
+    }
+  }
+
+  fetchUser()
+}, [])
+  useEffect(() => {
 
     if (!id) return
 
     const fetchDoctor = async () => {
       try {
         const { data } = await api.get(`/doctor/${id}`)
-        console.log(data)
         setDoctor(data)
 
       } catch (err) {
@@ -48,76 +68,98 @@ export default function DoctorDetail() {
     }
 
     fetchDoctor()
-
-    const stored = JSON.parse(
-      localStorage.getItem(`reviews-${id}`) || '[]'
-    )
-    setReviews(stored)
-
+    fetchReviews()
   }, [id])
 
-   useEffect(() => {
-  if (!doctor?._id) return
+  useEffect(() => {
+    if (!doctor?._id) return
 
-  const fetchCounts = async () => {
+    const fetchCounts = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        if (!token) return
+
+        const apptRes = await api.get("/appointments", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        const list = apptRes.data?.data ?? apptRes.data
+
+        const doctorAppointments = list.filter(
+          (a: any) =>
+            (typeof a.doctor === "string"
+              ? a.doctor
+              : a.doctor?._id) === doctor._id
+        )
+        console.log(doctorAppointments)
+
+        setTotalConsultations(doctorAppointments.length)
+
+        const uniquePatientIds = new Set(
+          doctorAppointments
+            .map((a: any) => a.patient)
+            .filter(Boolean)
+        )
+
+        setTotalPatients(uniquePatientIds.size)
+      } catch (err) {
+        console.error("Failed to fetch counts", err)
+      }
+    }
+
+    fetchCounts()
+  }, [doctor])
+
+ const fetchDoctorStats = async () => {
+  const { data } = await api.get(`/reviews/doctor/${id}/stats`)
+
+  setDoctor((prev: any) => ({
+    ...prev,
+    rating: data.rating,
+    totalReviews: data.totalReviews,
+  }))
+}
+
+
+  const fetchReviews = async () => {
     try {
-      const token = localStorage.getItem("token")
-      if (!token) return
-
-      const apptRes = await api.get("/appointments", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-
-      const list = apptRes.data?.data ?? apptRes.data
-
-      const doctorAppointments = list.filter(
-        (a: any) =>
-          (typeof a.doctor === "string"
-            ? a.doctor
-            : a.doctor?._id) === doctor._id
-      )
-      console.log(doctorAppointments)
-
-      setTotalConsultations(doctorAppointments.length)
-
-      const uniquePatientIds = new Set(
-        doctorAppointments
-          .map((a: any) => a.patient)
-          .filter(Boolean)
-      )
-
-      setTotalPatients(uniquePatientIds.size)
+      const { data } = await api.get(`/reviews/doctor/${id}`)
+      setReviews(data)
+      console.log("review",data)
     } catch (err) {
-      console.error("Failed to fetch counts", err)
+      console.error("Failed to fetch reviews", err)
     }
   }
 
-  fetchCounts()
-}, [doctor])
+ const submitReview = async () => {
+  if (!rating || !comment.trim()) {
+    alert("Please give rating and comment")
+    return
+  }
 
+  if (!user) {
+    alert("Please login to submit review")
+    return
+  }
 
-  const submitReview = () => {
-    if (!rating || !comment.trim()) {
-      alert('Please give rating and comment')
-      return
-    }
-
-    const newReview: Review = {
-      id: crypto.randomUUID(),
-      patientName: user?.name || 'Anonymous',
-      email: user?.email || '',
-      rating,
+  try {
+    await api.post("/reviews", {
+      doctorId: id as string,
+      patientId: user._id, // make sure this exists
+      rating: Number(rating),
       comment,
-      date: new Date().toISOString()
-    }
-
-    const updated = [newReview, ...reviews]
-    setReviews(updated)
-    localStorage.setItem(`reviews-${id}`, JSON.stringify(updated))
+    })
 
     setRating(0)
-    setComment('')
+    setComment("")
+
+    fetchReviews()
+    fetchDoctorStats()
+  } catch (err: any) {
+    console.error("Failed to submit review", err.response?.data || err)
   }
+}
+
   const handleBook = () => {
     router.push(
       `/book-appointment?doctorId=${doctor._id}&doctorName=${encodeURIComponent(doctor.name)}`
@@ -127,19 +169,19 @@ export default function DoctorDetail() {
     {
       icon: Users,
       label: 'Total Patients',
-      value: totalPatients ,
+      value: totalPatients,
       color: 'text-blue-500',
     },
     {
       icon: CheckCircle,
       label: 'Consultations',
-      value: totalConsultations ,
+      value: totalConsultations,
       color: 'text-green-500',
     },
     {
       icon: Star,
       label: 'Rating',
-      value: doctor?.rating || '4.8',
+      value: doctor?.rating ?? 0,
       color: 'text-yellow-500',
     },
     {
@@ -339,9 +381,9 @@ export default function DoctorDetail() {
 
           <div className="space-y-6">
             {reviews.map(r => (
-              <div key={r.id} className="border rounded-xl p-6 shadow-sm bg-gradient-to-r from-amethyst/10 to-french-violet/10  border-purple-glow  gap-3">
+              <div key={r._id} className="border rounded-xl p-6 shadow-sm bg-gradient-to-r from-amethyst/10 to-french-violet/10  border-purple-glow  gap-3">
                 <div className="flex justify-between">
-                  <p className="font-medium">{r.patientName}</p>
+                  <p className="font-medium"> {r.patient?.name || "Anonymous Patient"}</p>
                   <div className="flex gap-1">
                     {[...Array(r.rating)].map((_, i) => (
                       <Star

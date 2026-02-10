@@ -192,10 +192,8 @@ export default function DoctorProfile() {
         },
       };
 
-      // 🔥 3️⃣ ACTUAL UPDATE CALL (you were missing this)
       await api.patch('/doctor/profile', payload);
 
-      // 4️⃣ Refresh profile
       const refreshed = await api.get('/doctor/profile');
       setUser(refreshed.data);
       setFormData({
